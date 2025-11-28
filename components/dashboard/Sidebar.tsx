@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Home, Users, BookOpen, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { signout } from "@/app/(auth)/actions";
 
 const sidebarItems = [
     { href: "/", icon: Home, label: "Dashboard" },
@@ -44,11 +45,14 @@ export function Sidebar() {
                     })}
                 </nav>
             </div>
+
             <div className="mt-auto p-4">
-                <Button variant="outline" className="w-full justify-start gap-2">
-                    <LogOut className="h-4 w-4" />
-                    Logout
-                </Button>
+                <form action={signout}>
+                    <Button variant="outline" className="w-full justify-start gap-2">
+                        <LogOut className="h-4 w-4" />
+                        Logout
+                    </Button>
+                </form>
             </div>
         </div>
     );

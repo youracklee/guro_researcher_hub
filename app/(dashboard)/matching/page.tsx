@@ -5,39 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { createClient } from "@/lib/supabase/server";
 
-const researchers = [
-    {
-        id: 1,
-        name: "Dr. Kim Min-su",
-        department: "Cardiology",
-        interests: ["Heart Failure", "Arrhythmia", "AI Diagnosis"],
-        image: "https://github.com/shadcn.png",
-    },
-    {
-        id: 2,
-        name: "Dr. Lee Ji-hyun",
-        department: "Neurology",
-        interests: ["Alzheimer's", "Neuroscience", "Genomics"],
-        image: "https://github.com/shadcn.png",
-    },
-    {
-        id: 3,
-        name: "Dr. Park Sung-ho",
-        department: "Oncology",
-        interests: ["Immunotherapy", "Lung Cancer", "Clinical Trials"],
-        image: "https://github.com/shadcn.png",
-    },
-    {
-        id: 4,
-        name: "Dr. Choi Soo-jin",
-        department: "Pediatrics",
-        interests: ["Rare Diseases", "Genetics", "Neonatology"],
-        image: "https://github.com/shadcn.png",
-    },
-];
+export default async function MatchingPage() {
+    const supabase = await createClient();
+    const { data: researchers } = await supabase.from("researchers").select("*");
 
-export default function MatchingPage() {
     return (
         <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -67,11 +40,11 @@ export default function MatchingPage() {
             </div>
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {researchers.map((researcher) => (
+                {researchers?.map((researcher) => (
                     <Card key={researcher.id}>
                         <CardHeader className="flex flex-row items-center gap-4">
                             <Avatar className="h-12 w-12">
-                                <AvatarImage src={researcher.image} alt={researcher.name} />
+                                <AvatarImage src={researcher.image_url} alt={researcher.name} />
                                 <AvatarFallback>{researcher.name.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div className="grid gap-1">
@@ -81,7 +54,7 @@ export default function MatchingPage() {
                         </CardHeader>
                         <CardContent>
                             <div className="flex flex-wrap gap-2">
-                                {researcher.interests.map((interest) => (
+                                {researcher.interests?.map((interest: string) => (
                                     <Badge key={interest} variant="secondary">
                                         {interest}
                                     </Badge>
