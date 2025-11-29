@@ -1,20 +1,14 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
+import { cn } from "@/lib/utils";
+import ChartRegistry from "@/components/charts/ChartRegistry";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const notoSansKr = Noto_Sans_KR({ subsets: ["latin"], weight: ["100", "300", "400", "500", "700", "900"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "Guro Researcher Hub",
-  description: "Connect with researchers at Guro Hospital",
+  description: "Research Hub for Guro Hospital",
 };
 
 export default function RootLayout({
@@ -25,8 +19,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={cn(
+          "min-h-screen bg-slate-50 font-sans antialiased",
+          notoSansKr.variable
+        )}
       >
+        <ChartRegistry />
         {children}
       </body>
     </html>
