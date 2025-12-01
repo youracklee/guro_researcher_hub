@@ -6,10 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FaSearch, FaUserMd, FaFlask, FaRobot } from "react-icons/fa";
+import { FaSearch, FaUserMd, FaFlask, FaRobot, FaArrowLeft, FaMicrochip, FaHandshake } from "react-icons/fa";
 import { researchers as mockResearchers, recruitmentData as mockRecruitmentData } from "@/lib/mocks";
-
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export default function SearchPage() {
     const [query, setQuery] = useState("");
@@ -58,32 +56,97 @@ export default function SearchPage() {
             setError(err.message || "An unexpected error occurred");
             setResults({ error: err.message });
         } finally {
+            ```
+"use client";
+
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { FaSearch, FaUserMd, FaFlask, FaRobot, FaArrowLeft, FaMicrochip, FaHandshake } from "react-icons/fa";
+import { researchers as mockResearchers, recruitmentData as mockRecruitmentData } from "@/lib/mocks";
+
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+
+export default function SearchPage() {
+    const [query, setQuery] = useState("");
+    const [results, setResults] = useState<any>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [selectedResearcher, setSelectedResearcher] = useState<any>(null);
+
+    const handleSearch = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!query.trim()) return;
+
+        setLoading(true);
+        setResults(null);
+        setError(null);
+        setSelectedResearcher(null);
+
+        try {
+            console.log("Sending search request for:", query);
+            const res = await fetch('/api/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query }),
+            });
+
+            console.log("API Response Status:", res.status);
+
+            if (!res.ok) {
+                const errorText = await res.text();
+                console.error("API Error Body:", errorText);
+                let errorMessage = `Server Error(${ res.status })`;
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    if (errorJson.error) errorMessage = errorJson.error;
+                } catch (e) {
+                    // Ignore JSON parse error, use default message
+                }
+                throw new Error(errorMessage);
+            }
+
+            const data = await res.json();
+            console.log("Search Results:", data);
+            setResults(data);
+        } catch (err: any) {
+            console.error("Search failed:", err);
+            setError(err.message || "An unexpected error occurred");
+            setResults({ error: err.message });
+        } finally {
             setLoading(false);
         }
     };
 
     return (
         <div className="p-8 space-y-8 h-full overflow-y-auto custom-scrollbar">
-            <header>
-                <h1 className="text-2xl font-bold text-slate-800">AI 연구 주제 탐색</h1>
-                <p className="text-slate-500 text-sm mt-1">자연어로 연구 주제나 키워드를 입력하여 관련 연구자와 프로젝트를 찾아보세요.</p>
-            </header>
+            {/* Header - Only show when not in detail view */}
+            {!selectedResearcher && (
+                <header>
+                    <h1 className="text-2xl font-bold text-slate-800">AI 연구 주제 탐색</h1>
+                    <p className="text-slate-500 text-sm mt-1">자연어로 연구 주제나 키워드를 입력하여 관련 연구자와 프로젝트를 찾아보세요.</p>
+                </header>
+            )}
 
-            {/* Search Input */}
-            <form onSubmit={handleSearch} className="flex gap-4">
-                <div className="relative flex-1">
-                    <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
-                    <Input
-                        className="pl-10 h-12 text-lg bg-white shadow-sm"
-                        placeholder="예: 인공지능을 활용한 영상 진단 연구"
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                    />
-                </div>
-                <Button type="submit" size="lg" className="h-12 px-8 bg-indigo-600 hover:bg-indigo-700" disabled={loading}>
-                    {loading ? "검색 중..." : "검색"}
-                </Button>
-            </form>
+            {/* Search Input - Only show when not in detail view */}
+            {!selectedResearcher && (
+                <form onSubmit={handleSearch} className="flex gap-4">
+                    <div className="relative flex-1">
+                        <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+                        <Input
+                            className="pl-10 h-12 text-lg bg-white shadow-sm"
+                            placeholder="예: 인공지능을 활용한 영상 진단 연구"
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                        />
+                    </div>
+                    <Button type="submit" size="lg" className="h-12 px-8 bg-indigo-600 hover:bg-indigo-700" disabled={loading}>
+                        {loading ? "검색 중..." : "검색"}
+                    </Button>
+                </form>
+            )}
 
             {/* Loading Indicator */}
             {loading && (
@@ -95,15 +158,15 @@ export default function SearchPage() {
             )}
 
             {/* Results Area */}
-            {!loading && (
+            {!loading && !selectedResearcher && (
                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-
+                    
                     {/* Error Message */}
                     {error && (
                         <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-md flex items-center">
                             <span className="mr-2">⚠️</span>
-                            {error === 'Internal Server Error'
-                                ? '검색 서비스를 사용할 수 없습니다. (API 키 설정 확인 필요)'
+                            {error === 'Internal Server Error' 
+                                ? '검색 서비스를 사용할 수 없습니다. (API 키 설정 확인 필요)' 
                                 : error}
                         </div>
                     )}
@@ -126,20 +189,20 @@ export default function SearchPage() {
                         {/* Researchers Results */}
                         <div className="space-y-4">
                             <h2 className="text-xl font-bold text-slate-800 flex items-center">
-                                <FaUserMd className="mr-2 text-indigo-500" />
+                                <FaUserMd className="mr-2 text-indigo-500" /> 
                                 {results && !error ? "관련 연구자" : "전체 연구자 (추천)"}
                             </h2>
-
+                            
                             {(() => {
                                 const isResultValid = results && !error && Array.isArray(results.researchers);
                                 const displayResearchers = isResultValid ? results.researchers : mockResearchers;
-
+                                
                                 return displayResearchers?.length > 0 ? (
                                     displayResearchers.map((researcher: any, idx: number) => {
                                         if (!researcher) return null;
                                         return (
-                                            <Card
-                                                key={researcher.id || idx}
+                                            <Card 
+                                                key={researcher.id || idx} 
                                                 className="hover:shadow-md transition-shadow cursor-pointer hover:border-indigo-300"
                                                 onClick={() => setSelectedResearcher(researcher)}
                                             >
@@ -183,13 +246,13 @@ export default function SearchPage() {
                         {/* Projects Results (Only show if results exist or if we want to show random projects) */}
                         <div className="space-y-4">
                             <h2 className="text-xl font-bold text-slate-800 flex items-center">
-                                <FaFlask className="mr-2 text-emerald-500" />
+                                <FaFlask className="mr-2 text-emerald-500" /> 
                                 {results && !error ? "관련 연구 과제" : "최근 연구 과제"}
                             </h2>
                             {(() => {
                                 const isResultValid = results && !error && Array.isArray(results.projects);
                                 const displayProjects = isResultValid ? results.projects : mockRecruitmentData.topProjects;
-
+                                
                                 return displayProjects?.length > 0 ? (
                                     displayProjects.map((project: any, idx: number) => {
                                         if (!project) return null;
@@ -201,7 +264,7 @@ export default function SearchPage() {
                                                         <div>
                                                             <p className="text-sm text-slate-600">연구책임자: {project.researcher_name || project.pi || "정보 없음"}</p>
                                                             <p className="text-xs text-slate-400">
-                                                                {project.year ? `${project.year}년 | ` : ""}
+                                                                {project.year ? `${ project.year } 년 | ` : ""}
                                                                 {project.budget || 0}백만원
                                                             </p>
                                                         </div>
@@ -211,7 +274,7 @@ export default function SearchPage() {
                                                             </Badge>
                                                         )}
                                                         {!isResultValid && project.platform && (
-                                                            <Badge variant="outline" className="text-xs border-slate-200 text-slate-600">
+                                                             <Badge variant="outline" className="text-xs border-slate-200 text-slate-600">
                                                                 {project.platform}
                                                             </Badge>
                                                         )}
@@ -229,106 +292,151 @@ export default function SearchPage() {
                 </div>
             )}
 
-            {/* Researcher Detail Modal */}
-            <Dialog open={!!selectedResearcher} onOpenChange={(open) => !open && setSelectedResearcher(null)}>
-                <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                        <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-                            {selectedResearcher?.name_ko || selectedResearcher?.name}
-                            <Badge variant="outline" className="text-sm font-normal text-slate-500">
-                                {selectedResearcher?.department}
-                            </Badge>
-                        </DialogTitle>
-                        <DialogDescription>
-                            {selectedResearcher?.position || selectedResearcher?.specialty}
-                        </DialogDescription>
-                    </DialogHeader>
+            {/* Full Page Researcher Detail View */}
+            {selectedResearcher && (
+                <div className="h-full flex flex-col lg:flex-row gap-6 animate-in fade-in slide-in-from-right-8 duration-300">
+                    {/* Left: Researcher Profile */}
+                    <div className="lg:w-1/3 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col h-full overflow-y-auto shrink-0">
+                        <button 
+                            onClick={() => setSelectedResearcher(null)}
+                            className="self-start text-sm text-slate-500 hover:text-indigo-600 mb-4 flex items-center transition-colors"
+                        >
+                            <FaArrowLeft className="mr-2" /> 목록으로 돌아가기
+                        </button>
 
-                    <div className="space-y-6 py-4">
-                        {/* Basic Info */}
-                        <div className="flex gap-6">
-                            <div className="w-24 h-24 rounded-full bg-slate-100 flex items-center justify-center text-4xl overflow-hidden flex-shrink-0">
-                                {selectedResearcher?.image_url ? (
+                        <div className="flex flex-col items-center text-center mb-6">
+                            <div className="w-32 h-32 rounded-full bg-slate-100 flex items-center justify-center text-5xl overflow-hidden mb-4 border-4 border-white shadow-md">
+                                {selectedResearcher.image_url ? (
                                     <img src={selectedResearcher.image_url} alt={selectedResearcher.name_ko} className="w-full h-full object-cover" />
                                 ) : (
                                     "👨‍⚕️"
                                 )}
                             </div>
-                            <div className="space-y-2">
-                                <div>
-                                    <h4 className="font-semibold text-slate-900">주요 연구 분야</h4>
-                                    <p className="text-slate-600">{selectedResearcher?.major_research || "정보 없음"}</p>
+                            <h2 className="text-2xl font-bold text-slate-800">{selectedResearcher.name_ko || selectedResearcher.name}</h2>
+                            <p className="text-slate-500 font-medium">{selectedResearcher.department} | {selectedResearcher.position || selectedResearcher.specialty}</p>
+                            
+                            {selectedResearcher.keywords && (
+                                <div className="flex gap-1 flex-wrap justify-center mt-3">
+                                    {selectedResearcher.keywords.slice(0, 3).map((k: string, i: number) => (
+                                        <Badge key={i} variant="secondary" className="text-xs">{k}</Badge>
+                                    ))}
                                 </div>
-                                {selectedResearcher?.keywords && (
-                                    <div className="flex gap-1 flex-wrap">
-                                        {selectedResearcher.keywords.map((k: string, i: number) => (
-                                            <Badge key={i} variant="secondary" className="text-xs">{k}</Badge>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
+                            )}
                         </div>
 
-                        {/* Stats Grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-slate-50 p-3 rounded-lg text-center">
-                                <div className="text-2xl font-bold text-indigo-600">{selectedResearcher?.publications || 0}</div>
-                                <div className="text-xs text-slate-500">논문 수</div>
+                        <div className="space-y-6 flex-1">
+                            {/* Stats Grid */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-slate-50 p-3 rounded-lg text-center border border-slate-100">
+                                    <div className="text-xl font-bold text-indigo-600">{selectedResearcher.publications || 0}</div>
+                                    <div className="text-xs text-slate-500">논문 수</div>
+                                </div>
+                                <div className="bg-slate-50 p-3 rounded-lg text-center border border-slate-100">
+                                    <div className="text-xl font-bold text-emerald-600">{selectedResearcher.projects || 0}</div>
+                                    <div className="text-xs text-slate-500">과제 수</div>
+                                </div>
+                                <div className="bg-slate-50 p-3 rounded-lg text-center border border-slate-100">
+                                    <div className="text-xl font-bold text-blue-600">{selectedResearcher.citations || 0}</div>
+                                    <div className="text-xs text-slate-500">피인용 수</div>
+                                </div>
+                                <div className="bg-slate-50 p-3 rounded-lg text-center border border-slate-100">
+                                    <div className="text-xl font-bold text-violet-600">{selectedResearcher.budget || 0}억</div>
+                                    <div className="text-xs text-slate-500">연구비</div>
+                                </div>
                             </div>
-                            <div className="bg-slate-50 p-3 rounded-lg text-center">
-                                <div className="text-2xl font-bold text-emerald-600">{selectedResearcher?.projects || 0}</div>
-                                <div className="text-xs text-slate-500">과제 수</div>
-                            </div>
-                            <div className="bg-slate-50 p-3 rounded-lg text-center">
-                                <div className="text-2xl font-bold text-blue-600">{selectedResearcher?.citations || 0}</div>
-                                <div className="text-xs text-slate-500">피인용 수</div>
-                            </div>
-                            <div className="bg-slate-50 p-3 rounded-lg text-center">
-                                <div className="text-2xl font-bold text-violet-600">{selectedResearcher?.budget || 0}억</div>
-                                <div className="text-xs text-slate-500">연구비</div>
-                            </div>
+
+                            {/* Lab Info */}
+                            {selectedResearcher.lab_info && (
+                                <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                                    <h4 className="text-sm font-bold text-slate-800 mb-2">🔬 연구실 정보</h4>
+                                    <p className="text-sm text-slate-600 leading-relaxed">
+                                        {selectedResearcher.lab_info}
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* External Link */}
+                            {(selectedResearcher.profile_url) && (
+                                <a 
+                                    href={selectedResearcher.profile_url} 
+                                    target="_blank" 
+                                    rel="noreferrer"
+                                    className="block w-full text-center py-3 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-sm hover:bg-indigo-100 transition"
+                                >
+                                    병원 프로필 페이지 방문하기
+                                </a>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Right: Projects & Details */}
+                    <div className="lg:w-2/3 flex flex-col gap-6 h-full overflow-y-auto custom-scrollbar pr-2">
+                        
+                        {/* Major Research Areas */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 shrink-0">
+                            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center">
+                                <FaMicrochip className="mr-2 text-indigo-500" />주요 연구 분야
+                            </h3>
+                            <p className="text-slate-600 leading-relaxed">
+                                {selectedResearcher.major_research || "등록된 주요 연구 분야 정보가 없습니다."}
+                            </p>
                         </div>
 
-                        {/* Lab Info */}
-                        {selectedResearcher?.lab_info && (
-                            <div>
-                                <h4 className="font-semibold text-slate-900 mb-2">연구실 정보</h4>
-                                <p className="text-slate-600 text-sm bg-slate-50 p-3 rounded-md">
-                                    {selectedResearcher.lab_info}
-                                </p>
+                        {/* Associated Projects */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 shrink-0">
+                            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center">
+                                <FaFlask className="mr-2 text-emerald-500" />관련 연구 과제
+                            </h3>
+                            
+                            <div className="space-y-4">
+                                {(() => {
+                                    // If we have search results, try to filter projects relevant to this researcher
+                                    // Otherwise use mock projects
+                                    const relevantProjects = results?.projects?.filter((p: any) => 
+                                        p.researcher_name === selectedResearcher.name || 
+                                        p.pi === selectedResearcher.name
+                                    ) || mockRecruitmentData.topProjects.slice(0, 3);
+
+                                    return relevantProjects.length > 0 ? (
+                                        relevantProjects.map((project: any, idx: number) => (
+                                            <div key={idx} className="border border-slate-100 rounded-xl p-4 hover:bg-slate-50 transition">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <h4 className="font-bold text-slate-800 line-clamp-1">{project.title}</h4>
+                                                    <Badge variant="outline" className="shrink-0 ml-2">{project.year || "2024"}</Badge>
+                                                </div>
+                                                <p className="text-sm text-slate-500 mb-2 line-clamp-2">{project.description || "연구 과제에 대한 상세 설명이 없습니다."}</p>
+                                                <div className="flex justify-between items-center text-xs text-slate-400">
+                                                    <span>연구비: {project.budget || 0}백만원</span>
+                                                    <span>{project.platform || "국책과제"}</span>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-slate-500 text-sm">관련된 연구 과제 정보가 없습니다.</p>
+                                    );
+                                })()}
                             </div>
-                        )}
+                        </div>
 
                         {/* Platforms */}
-                        {selectedResearcher?.platforms && selectedResearcher.platforms.length > 0 && (
-                            <div>
-                                <h4 className="font-semibold text-slate-900 mb-2">참여 플랫폼</h4>
-                                <div className="flex gap-2">
+                        {selectedResearcher.platforms && selectedResearcher.platforms.length > 0 && (
+                            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 shrink-0">
+                                <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center">
+                                    <FaHandshake className="mr-2 text-blue-500" />참여 플랫폼
+                                </h3>
+                                <div className="flex gap-2 flex-wrap">
                                     {selectedResearcher.platforms.map((p: string, i: number) => (
-                                        <Badge key={i} variant="outline" className="border-indigo-200 text-indigo-700 bg-indigo-50">
+                                        <Badge key={i} className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100 px-3 py-1 text-sm">
                                             {p}
                                         </Badge>
                                     ))}
                                 </div>
                             </div>
                         )}
-
-                        {/* External Link */}
-                        {(selectedResearcher?.profile_url) && (
-                            <div className="pt-4 border-t">
-                                <a
-                                    href={selectedResearcher.profile_url}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-indigo-600 hover:underline text-sm flex items-center"
-                                >
-                                    병원 프로필 페이지 방문하기 →
-                                </a>
-                            </div>
-                        )}
                     </div>
-                </DialogContent>
-            </Dialog>
+                </div>
+            )}
         </div>
     );
 }
+```
