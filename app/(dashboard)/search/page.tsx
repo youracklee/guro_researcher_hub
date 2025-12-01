@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -39,66 +38,6 @@ export default function SearchPage() {
                 const errorText = await res.text();
                 console.error("API Error Body:", errorText);
                 let errorMessage = `Server Error (${res.status})`;
-                try {
-                    const errorJson = JSON.parse(errorText);
-                    if (errorJson.error) errorMessage = errorJson.error;
-                } catch (e) {
-                    // Ignore JSON parse error, use default message
-                }
-                throw new Error(errorMessage);
-            }
-
-            const data = await res.json();
-            console.log("Search Results:", data);
-            setResults(data);
-        } catch (err: any) {
-            console.error("Search failed:", err);
-            setError(err.message || "An unexpected error occurred");
-            setResults({ error: err.message });
-        } finally {
-            ```
-"use client";
-
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { FaSearch, FaUserMd, FaFlask, FaRobot, FaArrowLeft, FaMicrochip, FaHandshake } from "react-icons/fa";
-import { researchers as mockResearchers, recruitmentData as mockRecruitmentData } from "@/lib/mocks";
-
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-
-export default function SearchPage() {
-    const [query, setQuery] = useState("");
-    const [results, setResults] = useState<any>(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [selectedResearcher, setSelectedResearcher] = useState<any>(null);
-
-    const handleSearch = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!query.trim()) return;
-
-        setLoading(true);
-        setResults(null);
-        setError(null);
-        setSelectedResearcher(null);
-
-        try {
-            console.log("Sending search request for:", query);
-            const res = await fetch('/api/search', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query }),
-            });
-
-            console.log("API Response Status:", res.status);
-
-            if (!res.ok) {
-                const errorText = await res.text();
-                console.error("API Error Body:", errorText);
-                let errorMessage = `Server Error(${ res.status })`;
                 try {
                     const errorJson = JSON.parse(errorText);
                     if (errorJson.error) errorMessage = errorJson.error;
@@ -160,13 +99,13 @@ export default function SearchPage() {
             {/* Results Area */}
             {!loading && !selectedResearcher && (
                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    
+
                     {/* Error Message */}
                     {error && (
                         <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-md flex items-center">
                             <span className="mr-2">⚠️</span>
-                            {error === 'Internal Server Error' 
-                                ? '검색 서비스를 사용할 수 없습니다. (API 키 설정 확인 필요)' 
+                            {error === 'Internal Server Error'
+                                ? '검색 서비스를 사용할 수 없습니다. (API 키 설정 확인 필요)'
                                 : error}
                         </div>
                     )}
@@ -189,20 +128,20 @@ export default function SearchPage() {
                         {/* Researchers Results */}
                         <div className="space-y-4">
                             <h2 className="text-xl font-bold text-slate-800 flex items-center">
-                                <FaUserMd className="mr-2 text-indigo-500" /> 
+                                <FaUserMd className="mr-2 text-indigo-500" />
                                 {results && !error ? "관련 연구자" : "전체 연구자 (추천)"}
                             </h2>
-                            
+
                             {(() => {
                                 const isResultValid = results && !error && Array.isArray(results.researchers);
                                 const displayResearchers = isResultValid ? results.researchers : mockResearchers;
-                                
+
                                 return displayResearchers?.length > 0 ? (
                                     displayResearchers.map((researcher: any, idx: number) => {
                                         if (!researcher) return null;
                                         return (
-                                            <Card 
-                                                key={researcher.id || idx} 
+                                            <Card
+                                                key={researcher.id || idx}
                                                 className="hover:shadow-md transition-shadow cursor-pointer hover:border-indigo-300"
                                                 onClick={() => setSelectedResearcher(researcher)}
                                             >
@@ -246,13 +185,13 @@ export default function SearchPage() {
                         {/* Projects Results (Only show if results exist or if we want to show random projects) */}
                         <div className="space-y-4">
                             <h2 className="text-xl font-bold text-slate-800 flex items-center">
-                                <FaFlask className="mr-2 text-emerald-500" /> 
+                                <FaFlask className="mr-2 text-emerald-500" />
                                 {results && !error ? "관련 연구 과제" : "최근 연구 과제"}
                             </h2>
                             {(() => {
                                 const isResultValid = results && !error && Array.isArray(results.projects);
                                 const displayProjects = isResultValid ? results.projects : mockRecruitmentData.topProjects;
-                                
+
                                 return displayProjects?.length > 0 ? (
                                     displayProjects.map((project: any, idx: number) => {
                                         if (!project) return null;
@@ -264,7 +203,7 @@ export default function SearchPage() {
                                                         <div>
                                                             <p className="text-sm text-slate-600">연구책임자: {project.researcher_name || project.pi || "정보 없음"}</p>
                                                             <p className="text-xs text-slate-400">
-                                                                {project.year ? `${ project.year } 년 | ` : ""}
+                                                                {project.year ? `${project.year}년 | ` : ""}
                                                                 {project.budget || 0}백만원
                                                             </p>
                                                         </div>
@@ -274,7 +213,7 @@ export default function SearchPage() {
                                                             </Badge>
                                                         )}
                                                         {!isResultValid && project.platform && (
-                                                             <Badge variant="outline" className="text-xs border-slate-200 text-slate-600">
+                                                            <Badge variant="outline" className="text-xs border-slate-200 text-slate-600">
                                                                 {project.platform}
                                                             </Badge>
                                                         )}
@@ -297,7 +236,7 @@ export default function SearchPage() {
                 <div className="h-full flex flex-col lg:flex-row gap-6 animate-in fade-in slide-in-from-right-8 duration-300">
                     {/* Left: Researcher Profile */}
                     <div className="lg:w-1/3 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col h-full overflow-y-auto shrink-0">
-                        <button 
+                        <button
                             onClick={() => setSelectedResearcher(null)}
                             className="self-start text-sm text-slate-500 hover:text-indigo-600 mb-4 flex items-center transition-colors"
                         >
@@ -314,7 +253,7 @@ export default function SearchPage() {
                             </div>
                             <h2 className="text-2xl font-bold text-slate-800">{selectedResearcher.name_ko || selectedResearcher.name}</h2>
                             <p className="text-slate-500 font-medium">{selectedResearcher.department} | {selectedResearcher.position || selectedResearcher.specialty}</p>
-                            
+
                             {selectedResearcher.keywords && (
                                 <div className="flex gap-1 flex-wrap justify-center mt-3">
                                     {selectedResearcher.keywords.slice(0, 3).map((k: string, i: number) => (
@@ -357,9 +296,9 @@ export default function SearchPage() {
 
                             {/* External Link */}
                             {(selectedResearcher.profile_url) && (
-                                <a 
-                                    href={selectedResearcher.profile_url} 
-                                    target="_blank" 
+                                <a
+                                    href={selectedResearcher.profile_url}
+                                    target="_blank"
                                     rel="noreferrer"
                                     className="block w-full text-center py-3 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-sm hover:bg-indigo-100 transition"
                                 >
@@ -371,7 +310,7 @@ export default function SearchPage() {
 
                     {/* Right: Projects & Details */}
                     <div className="lg:w-2/3 flex flex-col gap-6 h-full overflow-y-auto custom-scrollbar pr-2">
-                        
+
                         {/* Major Research Areas */}
                         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 shrink-0">
                             <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center">
@@ -387,13 +326,13 @@ export default function SearchPage() {
                             <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center">
                                 <FaFlask className="mr-2 text-emerald-500" />관련 연구 과제
                             </h3>
-                            
+
                             <div className="space-y-4">
                                 {(() => {
                                     // If we have search results, try to filter projects relevant to this researcher
                                     // Otherwise use mock projects
-                                    const relevantProjects = results?.projects?.filter((p: any) => 
-                                        p.researcher_name === selectedResearcher.name || 
+                                    const relevantProjects = results?.projects?.filter((p: any) =>
+                                        p.researcher_name === selectedResearcher.name ||
                                         p.pi === selectedResearcher.name
                                     ) || mockRecruitmentData.topProjects.slice(0, 3);
 
@@ -439,4 +378,3 @@ export default function SearchPage() {
         </div>
     );
 }
-```
