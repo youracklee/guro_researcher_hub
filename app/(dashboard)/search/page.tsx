@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { FaSearch, FaUserMd, FaFlask, FaRobot } from "react-icons/fa";
+import { researchers as mockResearchers, recruitmentData as mockRecruitmentData } from "@/lib/mocks";
 
 export default function SearchPage() {
     const [query, setQuery] = useState("");
@@ -57,12 +58,21 @@ export default function SearchPage() {
                 </Button>
             </form>
 
+            {/* Loading Indicator */}
+            {loading && (
+                <div className="flex flex-col items-center justify-center py-12 space-y-4 animate-in fade-in duration-500">
+                    <div className="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                    <p className="text-slate-600 font-medium">AI가 연구 주제를 분석하고 있습니다...</p>
+                    <p className="text-slate-400 text-sm">잠시만 기다려주세요.</p>
+                </div>
+            )}
+
             {/* Results Area */}
-            {results && (
+            {!loading && (
                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-                    {/* AI Summary */}
-                    {results.aiSummary && (
+                    {/* AI Summary (Only show if results exist) */}
+                    {results?.aiSummary && (
                         <Card className="bg-indigo-50 border-indigo-100">
                             <CardHeader className="pb-2">
                                 <CardTitle className="flex items-center text-indigo-700 text-lg">
@@ -79,22 +89,37 @@ export default function SearchPage() {
                         {/* Researchers Results */}
                         <div className="space-y-4">
                             <h2 className="text-xl font-bold text-slate-800 flex items-center">
-                                <FaUserMd className="mr-2 text-indigo-500" /> 관련 연구자
+                                <FaUserMd className="mr-2 text-indigo-500" />
+                                {results ? "관련 연구자" : "전체 연구자 (추천)"}
                             </h2>
-                            {results.researchers?.length > 0 ? (
-                                results.researchers.map((researcher: any) => (
+
+                            {(results ? results.researchers : mockResearchers).length > 0 ? (
+                                (results ? results.researchers : mockResearchers).map((researcher: any) => (
                                     <Card key={researcher.id} className="hover:shadow-md transition-shadow cursor-pointer">
                                         <CardContent className="p-4 flex items-start gap-4">
-                                            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-2xl">
-                                                👨‍⚕️
+                                            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-2xl overflow-hidden">
+                                                {researcher.image_url ? (
+                                                    <img src={researcher.image_url} alt={researcher.name_ko || researcher.name} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    "👨‍⚕️"
+                                                )}
                                             </div>
                                             <div>
-                                                <h3 className="font-bold text-slate-800">{researcher.name}</h3>
-                                                <p className="text-sm text-slate-500">{researcher.department} | {researcher.specialty}</p>
+                                                <h3 className="font-bold text-slate-800">{researcher.name_ko || researcher.name}</h3>
+                                                <p className="text-sm text-slate-500">{researcher.department} | {researcher.position || researcher.specialty}</p>
                                                 <div className="flex items-center gap-2 mt-2">
-                                                    <Badge variant="secondary" className="text-xs">유사도: {(researcher.similarity * 100).toFixed(0)}%</Badge>
-                                                    {researcher.profile_url && (
-                                                        <a href={researcher.profile_url} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 hover:underline">프로필 보기</a>
+                                                    {results && (
+                                                        <Badge variant="secondary" className="text-xs">유사도: {(researcher.similarity * 100).toFixed(0)}%</Badge>
+                                                    )}
+                                                    {!results && researcher.keywords && (
+                                                        <div className="flex gap-1 flex-wrap">
+                                                            {researcher.keywords.slice(0, 2).map((k: string, i: number) => (
+                                                                <Badge key={i} variant="outline" className="text-xs text-slate-500">{k}</Badge>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    {(researcher.profile_url || researcher.image_url) && (
+                                                        <a href={researcher.profile_url || "#"} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 hover:underline">프로필 보기</a>
                                                     )}
                                                 </div>
                                             </div>
@@ -106,24 +131,35 @@ export default function SearchPage() {
                             )}
                         </div>
 
-                        {/* Projects Results */}
+                        {/* Projects Results (Only show if results exist or if we want to show random projects) */}
                         <div className="space-y-4">
                             <h2 className="text-xl font-bold text-slate-800 flex items-center">
-                                <FaFlask className="mr-2 text-emerald-500" /> 관련 연구 과제
+                                <FaFlask className="mr-2 text-emerald-500" />
+                                {results ? "관련 연구 과제" : "최근 연구 과제"}
                             </h2>
-                            {results.projects?.length > 0 ? (
-                                results.projects.map((project: any) => (
-                                    <Card key={project.id} className="hover:shadow-md transition-shadow">
+                            {(results ? results.projects : mockRecruitmentData.topProjects).length > 0 ? (
+                                (results ? results.projects : mockRecruitmentData.topProjects).map((project: any, idx: number) => (
+                                    <Card key={project.id || idx} className="hover:shadow-md transition-shadow">
                                         <CardContent className="p-4">
                                             <h3 className="font-bold text-slate-800 mb-1 line-clamp-2">{project.title}</h3>
                                             <div className="flex justify-between items-end mt-2">
                                                 <div>
-                                                    <p className="text-sm text-slate-600">연구책임자: {project.researcher_name}</p>
-                                                    <p className="text-xs text-slate-400">{project.year}년 | {project.budget}백만원</p>
+                                                    <p className="text-sm text-slate-600">연구책임자: {project.researcher_name || project.pi}</p>
+                                                    <p className="text-xs text-slate-400">
+                                                        {project.year ? `${project.year}년 | ` : ""}
+                                                        {project.budget}백만원
+                                                    </p>
                                                 </div>
-                                                <Badge variant="outline" className="text-xs border-emerald-200 text-emerald-700 bg-emerald-50">
-                                                    유사도: {(project.similarity * 100).toFixed(0)}%
-                                                </Badge>
+                                                {results && (
+                                                    <Badge variant="outline" className="text-xs border-emerald-200 text-emerald-700 bg-emerald-50">
+                                                        유사도: {(project.similarity * 100).toFixed(0)}%
+                                                    </Badge>
+                                                )}
+                                                {!results && project.platform && (
+                                                    <Badge variant="outline" className="text-xs border-slate-200 text-slate-600">
+                                                        {project.platform}
+                                                    </Badge>
+                                                )}
                                             </div>
                                         </CardContent>
                                     </Card>
