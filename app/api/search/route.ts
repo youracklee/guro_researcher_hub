@@ -62,8 +62,8 @@ export async function POST(req: Request) {
         let aiSummary = '';
         try {
             const context = `
-        Researchers: ${JSON.stringify(researchers?.map(r => ({ name: r.name, specialty: r.specialty })))}
-        Projects: ${JSON.stringify(projects?.map(p => ({ title: p.title, researcher: p.researcher_name })))}
+        Researchers: ${JSON.stringify(researchers?.map((r: any) => ({ name: r.name, specialty: r.specialty })))}
+        Projects: ${JSON.stringify(projects?.map((p: any) => ({ title: p.title, researcher: p.researcher_name })))}
         `;
 
             const completion = await openai.chat.completions.create({
