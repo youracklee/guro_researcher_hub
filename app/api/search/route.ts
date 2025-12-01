@@ -7,13 +7,19 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
-
 export async function POST(req: Request) {
     try {
+        // Check for OpenAI API Key
+        if (!process.env.OPENAI_API_KEY) {
+            console.error("Missing OPENAI_API_KEY environment variable");
+            return NextResponse.json({ error: 'OpenAI API Key is not configured on the server.' }, { status: 500 });
+        }
+
+        // Initialize OpenAI client lazily
+        const openai = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY,
+        });
+
         const { query } = await req.json();
 
         if (!query) {
@@ -86,8 +92,8 @@ export async function POST(req: Request) {
             aiSummary
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Search API Error:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        return NextResponse.json({ error: `Internal Server Error: ${error.message}` }, { status: 500 });
     }
 }
