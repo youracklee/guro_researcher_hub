@@ -41,6 +41,9 @@ export default function SearchPage() {
                 try {
                     const errorJson = JSON.parse(errorText);
                     if (errorJson.error) errorMessage = errorJson.error;
+                    if (errorJson.details) {
+                        console.error("Detailed Error:", errorJson.details);
+                    }
                 } catch (e) {
                     // Ignore JSON parse error, use default message
                 }
@@ -274,37 +277,24 @@ export default function SearchPage() {
                                     <div className="text-xl font-bold text-emerald-600">{selectedResearcher.projects || 0}</div>
                                     <div className="text-xs text-slate-500">과제 수</div>
                                 </div>
-                                <div className="bg-slate-50 p-3 rounded-lg text-center border border-slate-100">
-                                    <div className="text-xl font-bold text-blue-600">{selectedResearcher.citations || 0}</div>
-                                    <div className="text-xs text-slate-500">피인용 수</div>
-                                </div>
-                                <div className="bg-slate-50 p-3 rounded-lg text-center border border-slate-100">
-                                    <div className="text-xl font-bold text-violet-600">{selectedResearcher.budget || 0}억</div>
-                                    <div className="text-xs text-slate-500">연구비</div>
-                                </div>
                             </div>
 
-                            {/* Lab Info */}
-                            {selectedResearcher.lab_info && (
-                                <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                                    <h4 className="text-sm font-bold text-slate-800 mb-2">🔬 연구실 정보</h4>
-                                    <p className="text-sm text-slate-600 leading-relaxed">
-                                        {selectedResearcher.lab_info}
+                            {/* Contact Info */}
+                            <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-2">
+                                <h4 className="text-sm font-bold text-slate-800 mb-2">📞 연락처 정보</h4>
+                                {selectedResearcher.email && (
+                                    <p className="text-sm text-slate-600 flex items-center gap-2">
+                                        <span className="text-xs bg-white px-2 py-0.5 rounded border border-slate-200">Email</span>
+                                        {selectedResearcher.email}
                                     </p>
-                                </div>
-                            )}
-
-                            {/* External Link */}
-                            {(selectedResearcher.profile_url) && (
-                                <a
-                                    href={selectedResearcher.profile_url}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="block w-full text-center py-3 bg-indigo-50 text-indigo-600 rounded-xl font-bold text-sm hover:bg-indigo-100 transition"
-                                >
-                                    병원 프로필 페이지 방문하기
-                                </a>
-                            )}
+                                )}
+                                {selectedResearcher.phone && (
+                                    <p className="text-sm text-slate-600 flex items-center gap-2">
+                                        <span className="text-xs bg-white px-2 py-0.5 rounded border border-slate-200">Tel</span>
+                                        {selectedResearcher.phone}
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     </div>
 
