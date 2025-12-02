@@ -18,9 +18,15 @@ export default function Sidebar() {
 
     return (
         <aside className="w-64 bg-white border-r border-gray-200 flex flex-col h-screen sticky top-0 shrink-0 z-20 shadow-sm">
-            <div className="h-16 flex items-center px-6 border-b border-gray-100">
-                <FaUsers className="text-blue-900 text-xl mr-3" />
-                <span className="font-bold text-lg text-slate-800">Research Hub</span>
+            <div className="h-auto py-6 flex flex-col items-center px-6 border-b border-gray-100 bg-white">
+                <div className="w-16 h-16 mb-3 relative flex items-center justify-center">
+                    <img
+                        src="https://i.namu.wiki/i/27VbLRhws-7lhRxn4UUGxnJ0fy6zfhPIP5Z1wtm3KTqsB_88zoePIJMB65v2Wp5iHkAKqx1OTRSZEWQto8f4Xg.svg"
+                        alt="Korea University Guro Hospital Logo"
+                        className="w-full h-full object-contain"
+                    />
+                </div>
+                <span className="font-bold text-lg text-slate-800 text-center leading-tight">Guro Research Hub</span>
             </div>
             <nav className="flex-1 py-6 space-y-1">
                 {menuItems.map((item) => {
