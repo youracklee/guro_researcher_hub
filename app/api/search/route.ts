@@ -83,7 +83,7 @@ export async function POST(req: Request) {
             const completion = await openai.chat.completions.create({
                 model: "gpt-4o",
                 messages: [
-                    { role: "system", content: "You are a helpful assistant for a hospital research dashboard. Summarize the search results for the user's query. Highlight key researchers and projects." },
+                    { role: "system", content: "You are a helpful assistant for a hospital research dashboard. Summarize the search results for the user's query. Highlight key researchers and projects. Please answer in Korean." },
                     { role: "user", content: `Query: ${query}\n\nContext:\n${context}` }
                 ],
                 max_tokens: 150
