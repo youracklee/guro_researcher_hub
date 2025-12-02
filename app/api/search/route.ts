@@ -66,7 +66,10 @@ export async function POST(req: Request) {
 
         if (projectsError) {
             console.error('Error searching projects:', projectsError);
-            return NextResponse.json({ error: 'Error searching projects' }, { status: 500 });
+            return NextResponse.json(
+                { error: 'Error searching projects', details: projectsError },
+                { status: 500 }
+            );
         }
 
         // 4. (Optional) Generate AI Summary/Insight using GPT-4o
