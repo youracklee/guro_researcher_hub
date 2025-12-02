@@ -48,7 +48,10 @@ export async function POST(req: Request) {
 
         if (researchersError) {
             console.error('Error searching researchers:', researchersError);
-            return NextResponse.json({ error: 'Error searching researchers' }, { status: 500 });
+            return NextResponse.json(
+                { error: 'Error searching researchers', details: researchersError },
+                { status: 500 }
+            );
         }
 
         // 3. Search Projects
