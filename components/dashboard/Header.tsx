@@ -16,7 +16,7 @@ import Sidebar from "./Sidebar";
 
 export function Header() {
     return (
-        <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
+        <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6 md:absolute md:top-0 md:right-0 md:w-auto md:border-none md:bg-transparent md:h-auto md:p-6 md:opacity-0 md:hover:opacity-100 md:transition-opacity md:duration-300 md:z-50">
             <Sheet>
                 <SheetTrigger asChild>
                     <Button
@@ -32,11 +32,11 @@ export function Header() {
                     <Sidebar />
                 </SheetContent>
             </Sheet>
-            <div className="w-full flex-1">
+            <div className="w-full flex-1 md:hidden">
             </div>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="secondary" size="icon" className="rounded-full">
+                    <Button variant="secondary" size="icon" className="rounded-full shadow-md">
                         <Avatar>
                             <AvatarImage src="https://github.com/shadcn.png" />
                             <AvatarFallback>CN</AvatarFallback>

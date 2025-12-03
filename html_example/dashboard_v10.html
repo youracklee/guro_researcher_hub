@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>구로병원 연구자 허브 - 기업 탐색 및 협력</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        .nav-btn.active {
+            background-color: #e0f2fe;
+            color: #0c4a6e;
+            border-right: 4px solid #0369a1;
+        }
+
+        canvas {
+            touch-action: none;
+        }
+
+        /* Custom Scrollbar */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 20px;
+        }
+
+        /* Toggle Switch Animation */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #3b82f6;
+        }
+
+        .toggle-checkbox:checked+.toggle-label {
+            background-color: #3b82f6;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 h-screen flex overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white border-r border-gray-200 flex flex-col z-20 shadow-sm shrink-0">
+        <div class="h-16 flex items-center px-6 border-b border-gray-100">
+            <i class="fa-solid fa-hospital-user text-blue-900 text-xl mr-3"></i>
+            <span class="font-bold text-lg text-slate-800">Research Hub</span>
+        </div>
+        <nav class="flex-1 py-6 space-y-1">
+            <button onclick="showSection('kpi')" id="btn-kpi"
+                class="nav-btn w-full text-left px-6 py-3 text-slate-500 hover:bg-slate-50 transition-colors font-medium">
+                <i class="fa-solid fa-chart-line w-6"></i> 핵심 요약 (KPI)
+            </button>
+            <button onclick="showSection('demo')" id="btn-demo"
+                class="nav-btn w-full text-left px-6 py-3 text-slate-500 hover:bg-slate-50 transition-colors font-medium">
+                <i class="fa-solid fa-users w-6"></i> 인력 구성 및 분포
+            </button>
+            <button onclick="showSection('perf')" id="btn-perf"
+                class="nav-btn w-full text-left px-6 py-3 text-slate-500 hover:bg-slate-50 transition-colors font-medium">
+                <i class="fa-solid fa-trophy w-6"></i> 연구 성과 분석
+            </button>
+            <button onclick="showSection('platform')" id="btn-platform"
+                class="nav-btn w-full text-left px-6 py-3 text-slate-500 hover:bg-slate-50 transition-colors font-medium">
+                <i class="fa-solid fa-flask w-6"></i> 연구 플랫폼 현황
+            </button>
+            <button onclick="showSection('search')" id="btn-search"
+                class="nav-btn w-full text-left px-6 py-3 text-slate-500 hover:bg-slate-50 transition-colors font-medium">
+                <i class="fa-solid fa-magnifying-glass w-6"></i> 연구자 탐색
+            </button>
+            <!-- NEW MENU ITEM: Company Search -->
+            <button onclick="showSection('company')" id="btn-company"
+                class="nav-btn active w-full text-left px-6 py-3 text-slate-500 hover:bg-slate-50 transition-colors font-medium">
+                <i class="fa-solid fa-building w-6"></i> 기업 탐색
+            </button>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-8 relative bg-slate-50/50">
+
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-6">
+            <div>
+                <h1 id="page-title" class="text-2xl font-bold text-slate-800">기업 탐색</h1>
+                <p id="page-desc" class="text-slate-500 text-sm mt-1">원내 연계 기업 및 외부 잠재 협력 기업을 AI로 발굴하세요.</p>
+            </div>
+        </header>
+
+        <!-- SECTION: Company Search (NEW) -->
+        <div id="section-company" class="content-section h-full flex flex-col">
+
+            <!-- 1. Search Interface -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-6 shrink-0">
+                <div class="flex flex-col md:flex-row gap-4 items-end md:items-center">
+
+                    <!-- Platform Filter -->
+                    <div class="w-full md:w-48 shrink-0">
+                        <label class="block text-xs font-bold text-slate-500 mb-1 ml-1">플랫폼 선택</label>
+                        <div class="relative">
+                            <select
+                                class="w-full appearance-none bg-slate-50 border border-slate-200 text-slate-700 py-3 px-4 pr-8 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer font-medium">
+                                <option value="all">전체 (All)</option>
+                                <option value="data">데이터 플랫폼</option>
+                                <option value="device">정밀의료기기</option>
+                                <option value="drug">신약 개발</option>
+                                <option value="regen">정밀재생</option>
+                            </select>
+                            <div
+                                class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500">
+                                <i class="fa-solid fa-chevron-down text-xs"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Web Search Toggle -->
+                    <div class="shrink-0 flex flex-col items-center justify-center h-full pb-1">
+                        <span class="text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Web
+                            Search</span>
+                        <div
+                            class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+                            <input type="checkbox" name="toggle" id="web-search-toggle"
+                                class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-slate-300 left-0 transition-all duration-300" />
+                            <label for="web-search-toggle"
+                                class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-200 cursor-pointer border border-slate-200"></label>
+                        </div>
+                    </div>
+
+                    <!-- Natural Language Search Input -->
+                    <div class="flex-1 w-full">
+                        <label class="block text-xs font-bold text-slate-500 mb-1 ml-1">기술/기업 검색</label>
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <i
+                                    class="fa-solid fa-robot text-indigo-400 group-focus-within:text-indigo-600 transition"></i>
+                            </div>
+                            <input type="text"
+                                class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-base py-3 pl-10 pr-12 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition shadow-sm placeholder-slate-400"
+                                placeholder="예: '영상의학 AI 진단 솔루션을 개발하는 스타트업 찾아줘'">
+                            <button class="absolute inset-y-0 right-2 flex items-center">
+                                <div
+                                    class="bg-indigo-600 hover:bg-indigo-700 text-white w-8 h-8 rounded-lg flex items-center justify-center transition shadow-md">
+                                    <i class="fa-solid fa-arrow-right text-sm"></i>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Result Area -->
+            <div class="flex-1 relative overflow-hidden">
+
+                <!-- View A: Company List -->
+                <div id="view-company-list" class="h-full overflow-y-auto custom-scroll p-1">
+                    <h3 class="text-sm font-bold text-slate-500 mb-4 flex items-center justify-between">
+                        <span><i class="fa-solid fa-building mr-2"></i>검색 결과 <span
+                                class="ml-1 text-indigo-600">3건</span></span>
+                        <span id="search-source-badge" class="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded">원내
+                            DB 검색</span>
+                    </h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+
+                        <!-- Card 1: Internal Company (High Relevance) -->
+                        <div onclick="selectCompany(1)"
+                            class="group bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-300 transition cursor-pointer relative overflow-hidden">
+                            <div
+                                class="absolute top-0 left-0 w-1 h-full bg-indigo-500 group-hover:bg-indigo-600 transition">
+                            </div>
+                            <div class="flex justify-between items-start mb-4 pl-2">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-12 h-12 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 text-xl font-bold border border-indigo-100">
+                                        <i class="fa-solid fa-cube"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-slate-800">Lunit (루닛)</h4>
+                                        <p class="text-xs text-slate-500">의료 AI · 영상진단</p>
+                                    </div>
+                                </div>
+                                <span
+                                    class="bg-indigo-100 text-indigo-700 text-xs px-2 py-1 rounded font-bold">협력중</span>
+                            </div>
+                            <div class="pl-2 space-y-2 mb-4">
+                                <div class="flex flex-wrap gap-1">
+                                    <span class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded">#CXR</span>
+                                    <span
+                                        class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded">#Mammography</span>
+                                    <span
+                                        class="text-xs bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded font-bold">#데이터플랫폼</span>
+                                </div>
+                                <p class="text-xs text-slate-400 line-clamp-2">
+                                    딥러닝 기반의 암 진단 보조 소프트웨어 개발. 구로병원 영상의학과 데이터 활용 이력 보유.
+                                </p>
+                            </div>
+                            <div
+                                class="pl-2 pt-3 border-t border-slate-50 flex justify-between items-center text-xs text-slate-500">
+                                <span><i class="fa-solid fa-flask mr-1"></i>공동연구 3건</span>
+                                <span><i class="fa-solid fa-location-dot mr-1"></i>서울 강남</span>
+                            </div>
+                        </div>
+
+                        <!-- Card 2: Internal Company -->
+                        <div onclick="selectCompany(2)"
+                            class="group bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md hover:border-emerald-300 transition cursor-pointer relative overflow-hidden">
+                            <div
+                                class="absolute top-0 left-0 w-1 h-full bg-emerald-500 group-hover:bg-emerald-600 transition">
+                            </div>
+                            <div class="flex justify-between items-start mb-4 pl-2">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-12 h-12 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 text-xl font-bold border border-emerald-100">
+                                        <i class="fa-solid fa-dna"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-slate-800">Genexine</h4>
+                                        <p class="text-xs text-slate-500">신약개발 · 면역치료</p>
+                                    </div>
+                                </div>
+                                <span class="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded font-bold">MOU
+                                    체결</span>
+                            </div>
+                            <div class="pl-2 space-y-2 mb-4">
+                                <div class="flex flex-wrap gap-1">
+                                    <span
+                                        class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded">#Immunotherapy</span>
+                                    <span
+                                        class="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded">#DNA_Vaccine</span>
+                                </div>
+                                <p class="text-xs text-slate-400 line-clamp-2">
+                                    혁신적인 면역 항암제 및 DNA 백신 기술 보유. 개방형 실험실 입주 기업.
+                                </p>
+                            </div>
+                            <div
+                                class="pl-2 pt-3 border-t border-slate-50 flex justify-between items-center text-xs text-slate-500">
+                                <span><i class="fa-solid fa-flask mr-1"></i>임상 2상 진행</span>
+                                <span><i class="fa-solid fa-location-dot mr-1"></i>서울 마곡</span>
+                            </div>
+                        </div>
+
+                        <!-- Card 3: External (Simulated Web Search) -->
+                        <div id="card-web-search"
+                            class="hidden group bg-slate-50 rounded-xl p-5 border border-slate-300 border-dashed shadow-sm hover:shadow-md hover:border-slate-400 transition cursor-pointer relative overflow-hidden">
+                            <div
+                                class="absolute top-0 right-0 bg-slate-600 text-white text-[10px] px-2 py-0.5 rounded-bl-lg font-bold">
+                                WEB 검색</div>
+                            <div class="flex justify-between items-start mb-4 pl-2">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-12 h-12 rounded-lg bg-white flex items-center justify-center text-slate-600 text-xl font-bold border border-slate-200">
+                                        <i class="fa-solid fa-globe"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-slate-800">DeepBio</h4>
+                                        <p class="text-xs text-slate-500">디지털 병리 AI</p>
+                                    </div>
+                                </div>
+                                <span class="bg-slate-200 text-slate-600 text-xs px-2 py-1 rounded">외부기업</span>
+                            </div>
+                            <div class="pl-2 space-y-2 mb-4">
+                                <div class="flex flex-wrap gap-1">
+                                    <span
+                                        class="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded">#ProstateCa</span>
+                                    <span
+                                        class="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded">#Pathology</span>
+                                </div>
+                                <p class="text-xs text-slate-400 line-clamp-2">
+                                    전립선암 병리 조직 진단 보조 AI 솔루션 DeepDx 보유. (웹 검색 결과)
+                                </p>
+                            </div>
+                            <div
+                                class="pl-2 pt-3 border-t border-slate-200 flex justify-between items-center text-xs text-slate-500">
+                                <span><i class="fa-solid fa-link mr-1"></i>유사도 88%</span>
+                                <span><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>사이트 이동</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- View B: Company Detail View (Split) -->
+                <div id="view-company-detail" class="hidden h-full flex flex-col lg:flex-row gap-6 animate-fade-in-up">
+
+                    <!-- Left: Company Profile -->
+                    <div
+                        class="lg:w-1/3 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col h-full overflow-y-auto">
+                        <button onclick="closeCompanyDetail()"
+                            class="self-start text-sm text-slate-500 hover:text-indigo-600 mb-4 flex items-center">
+                            <i class="fa-solid fa-arrow-left mr-2"></i> 목록으로 돌아가기
+                        </button>
+
+                        <div class="flex flex-col items-center text-center mb-6">
+                            <div
+                                class="w-24 h-24 rounded-2xl bg-white border border-slate-200 p-2 shadow-sm mb-4 flex items-center justify-center">
+                                <!-- Logo Placeholder -->
+                                <i class="fa-solid fa-cube text-4xl text-indigo-600"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold text-slate-800">Lunit (루닛)</h2>
+                            <p class="text-slate-500 font-medium text-sm">대표: 서범석 · 설립: 2013</p>
+                            <div class="mt-3 flex gap-2">
+                                <span
+                                    class="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold border border-indigo-100">원내
+                                    연계기업</span>
+                                <span
+                                    class="px-3 py-1 bg-slate-50 text-slate-600 rounded-full text-xs border border-slate-200">KOSDAQ
+                                    상장</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-6 flex-1">
+                            <!-- Radar Chart (Business) -->
+                            <div class="relative h-48 w-full">
+                                <canvas id="chartCompanyRadar"></canvas>
+                            </div>
+
+                            <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                                <h4 class="text-sm font-bold text-slate-800 mb-2">📊 기업 개요</h4>
+                                <ul class="text-sm text-slate-600 space-y-2">
+                                    <li class="flex justify-between"><span>기술성숙도(TRL)</span> <span
+                                            class="font-bold text-slate-800">9단계 (사업화)</span></li>
+                                    <li class="flex justify-between"><span>보유 특허</span> <span
+                                            class="font-bold text-slate-800">120건+</span></li>
+                                    <li class="flex justify-between"><span>주요 제품</span> <span
+                                            class="font-bold text-slate-800">Lunit INSIGHT</span></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Collaboration & Professors -->
+                    <div class="lg:w-2/3 flex flex-col gap-6 h-full overflow-y-auto custom-scroll">
+
+                        <!-- 1. Existing Collaboration (Highlight) -->
+                        <div
+                            class="bg-white rounded-2xl shadow-sm border border-indigo-100 p-6 relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-2 h-full bg-indigo-500"></div>
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 class="text-lg font-bold text-indigo-900 flex items-center">
+                                        <i class="fa-solid fa-handshake-simple mr-2"></i>구로병원 협력 현황
+                                    </h3>
+                                    <p class="text-sm text-slate-500 mt-1">현재 본원 의료진과 활발한 공동 연구를 수행 중입니다.</p>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-2xl font-bold text-indigo-600">3건</span>
+                                    <p class="text-xs text-slate-400">진행 과제</p>
+                                </div>
+                            </div>
+
+                            <!-- Participating Professors -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div
+                                    class="flex items-center gap-3 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">
+                                    <div
+                                        class="w-10 h-10 rounded-full bg-white flex items-center justify-center text-slate-400 border border-indigo-100 shadow-sm">
+                                        <i class="fa-solid fa-user-doctor"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-bold text-slate-800">김AI 교수 <span
+                                                class="text-xs font-normal text-slate-500 ml-1">영상의학과</span></p>
+                                        <p class="text-xs text-indigo-600 font-medium">폐 결절 진단 알고리즘 고도화</p>
+                                    </div>
+                                </div>
+                                <div
+                                    class="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-200 opacity-70">
+                                    <div
+                                        class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 border border-slate-200">
+                                        <i class="fa-solid fa-user-doctor"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-bold text-slate-800">이데이터 교수 <span
+                                                class="text-xs font-normal text-slate-500 ml-1">종양내과</span></p>
+                                        <p class="text-xs text-slate-500">유방암 예후 예측 모델 검증</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Tech Match Simulation -->
+                        <div class="bg-slate-800 rounded-2xl p-6 text-white shadow-md">
+                            <h3 class="font-bold text-lg mb-4 flex items-center">
+                                <i class="fa-solid fa-microchip mr-2 text-indigo-400"></i>기술 매칭 시뮬레이션
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                <div class="bg-white/10 rounded-lg p-3">
+                                    <p class="text-xs text-slate-400 mb-1">관심 키워드 일치도</p>
+                                    <div class="flex items-end gap-2">
+                                        <span class="text-2xl font-bold text-emerald-400">92%</span>
+                                        <span class="text-xs text-slate-300 mb-1">매우 높음</span>
+                                    </div>
+                                </div>
+                                <div class="bg-white/10 rounded-lg p-3">
+                                    <p class="text-xs text-slate-400 mb-1">임상 적용 가능성</p>
+                                    <div class="flex items-end gap-2">
+                                        <span class="text-2xl font-bold text-blue-400">High</span>
+                                        <span class="text-xs text-slate-300 mb-1">즉시 도입 검토</span>
+                                    </div>
+                                </div>
+                                <div class="bg-white/10 rounded-lg p-3">
+                                    <p class="text-xs text-slate-400 mb-1">예상 산출물</p>
+                                    <p class="text-sm font-bold mt-1">의료기기 인허가 1건</p>
+                                </div>
+                            </div>
+                            <button
+                                class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold text-sm transition shadow-lg shadow-indigo-600/30">
+                                협력 미팅 요청하기 (담당자 연결)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Hidden Sections -->
+        <div id="section-kpi" class="content-section hidden">KPI Placeholder</div>
+        <div id="section-demo" class="content-section hidden">Demo Placeholder</div>
+        <div id="section-perf" class="content-section hidden">Perf Placeholder</div>
+        <div id="section-platform" class="content-section hidden">Platform Placeholder</div>
+        <div id="section-search" class="content-section hidden">Researcher Search Placeholder</div>
+
+    </main>
+
+    <script>
+        // --- Navigation Logic ---
+        function showSection(id) {
+            document.querySelectorAll('.content-section').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+
+            document.getElementById('section-' + id).classList.remove('hidden');
+            document.getElementById('btn-' + id).classList.add('active');
+
+            // Re-render charts for Company section if visible
+            if (id === 'company' && !document.getElementById('view-company-detail').classList.contains('hidden')) {
+                renderCompanyRadar();
+            }
+        }
+
+        // --- Toggle Web Search Logic ---
+        const toggleCheckbox = document.getElementById('web-search-toggle');
+        const webSearchCard = document.getElementById('card-web-search');
+        const searchBadge = document.getElementById('search-source-badge');
+
+        toggleCheckbox.addEventListener('change', function () {
+            if (this.checked) {
+                // Show Web Results
+                webSearchCard.classList.remove('hidden');
+                searchBadge.textContent = "원내 + 외부(Web) 검색";
+                searchBadge.classList.replace('bg-slate-100', 'bg-indigo-100');
+                searchBadge.classList.replace('text-slate-500', 'text-indigo-600');
+            } else {
+                // Hide Web Results
+                webSearchCard.classList.add('hidden');
+                searchBadge.textContent = "원내 DB 검색";
+                searchBadge.classList.replace('bg-indigo-100', 'bg-slate-100');
+                searchBadge.classList.replace('text-indigo-600', 'text-slate-500');
+            }
+        });
+
+        // --- Company Detail Logic ---
+        let companyRadarInstance = null;
+
+        function selectCompany(id) {
+            document.getElementById('view-company-list').classList.add('hidden');
+            document.getElementById('view-company-detail').classList.remove('hidden');
+            renderCompanyRadar();
+        }
+
+        function closeCompanyDetail() {
+            document.getElementById('view-company-detail').classList.add('hidden');
+            document.getElementById('view-company-list').classList.remove('hidden');
+        }
+
+        function renderCompanyRadar() {
+            const ctx = document.getElementById('chartCompanyRadar');
+            if (companyRadarInstance) companyRadarInstance.destroy();
+
+            companyRadarInstance = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['기술성', '시장성', '재무건전성', '인력', '투자유치', '협력실적'],
+                    datasets: [{
+                        label: '기업 역량 진단',
+                        data: [95, 85, 80, 90, 95, 85],
+                        fill: true,
+                        backgroundColor: 'rgba(79, 70, 229, 0.2)', // Indigo
+                        borderColor: '#4f46e5',
+                        pointBackgroundColor: '#4f46e5',
+                        pointBorderColor: '#fff',
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: '#e2e8f0' },
+                            grid: { color: '#e2e8f0' },
+                            pointLabels: { font: { size: 11, weight: 'bold' }, color: '#64748b' },
+                            suggestedMin: 0, suggestedMax: 100, ticks: { display: false }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

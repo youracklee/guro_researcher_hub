@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>구로병원 연구자 허브 - 플랫폼 분석 (Lite)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        .nav-btn.active {
+            background-color: #e0f2fe;
+            color: #0c4a6e;
+            border-right: 4px solid #0369a1;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 h-screen flex overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white border-r border-gray-200 flex flex-col z-20 shadow-sm shrink-0">
+        <div class="h-16 flex items-center px-6 border-b border-gray-100">
+            <i class="fa-solid fa-hospital-user text-blue-900 text-xl mr-3"></i>
+            <span class="font-bold text-lg text-slate-800">Research Hub</span>
+        </div>
+        <nav class="flex-1 py-6 space-y-1">
+            <button onclick="showSection('kpi')" id="btn-kpi"
+                class="nav-btn w-full text-left px-6 py-3 text-slate-500 hover:bg-slate-50 transition-colors font-medium">
+                <i class="fa-solid fa-chart-line w-6"></i> 핵심 요약 (KPI)
+            </button>
+            <button onclick="showSection('demo')" id="btn-demo"
+                class="nav-btn w-full text-left px-6 py-3 text-slate-500 hover:bg-slate-50 transition-colors font-medium">
+                <i class="fa-solid fa-users w-6"></i> 인력 구성 및 분포
+            </button>
+            <button onclick="showSection('perf')" id="btn-perf"
+                class="nav-btn w-full text-left px-6 py-3 text-slate-500 hover:bg-slate-50 transition-colors font-medium">
+                <i class="fa-solid fa-trophy w-6"></i> 연구 성과 분석
+            </button>
+            <button onclick="showSection('platform')" id="btn-platform"
+                class="nav-btn active w-full text-left px-6 py-3 text-slate-500 hover:bg-slate-50 transition-colors font-medium">
+                <i class="fa-solid fa-flask w-6"></i> 연구 플랫폼 현황
+            </button>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-8 relative">
+
+        <header class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800">연구 플랫폼 현황</h1>
+                <p class="text-slate-500 text-sm mt-1">6대 핵심 연구 분야 참여도 및 예산 분석</p>
+            </div>
+        </header>
+
+        <!-- SECTION: Platform -->
+        <div id="section-platform" class="content-section space-y-6">
+
+            <!-- Row 1: Participation Stats (Pie & Stacked Bar) -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                <!-- 1. 전체 참여 비율 (Pie Chart) -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 lg:col-span-1 flex flex-col">
+                    <h3 class="text-lg font-bold mb-4">전체 참여 비율</h3>
+                    <div class="relative flex-1 min-h-[250px]">
+                        <canvas id="chartParticipation"></canvas>
+                    </div>
+                    <div class="mt-4 text-center text-xs text-slate-400">
+                        * 차트 내 수치는 인원수(비율)입니다.
+                    </div>
+                </div>
+
+                <!-- 2. 플랫폼별 인원 구성 (Stacked Bar) - Moved Here -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100 lg:col-span-2">
+                    <h3 class="text-lg font-bold mb-4">플랫폼별 참여 인원 구성 (직위별)</h3>
+                    <div class="relative h-72"> <!-- Height Adjusted -->
+                        <canvas id="chartPlatformStack"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2: Budget & Future Simulation -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                <!-- 3. 연구비 총액 비교 (Bar Chart) -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                    <h3 class="text-lg font-bold mb-4">플랫폼별 연구비 총액 비교</h3>
+                    <div class="relative h-80">
+                        <canvas id="chartPlatformBudget"></canvas>
+                    </div>
+                </div>
+
+                <!-- 4. Simulation Card (High Impact) -->
+                <div
+                    class="bg-gradient-to-br from-slate-800 to-slate-900 p-8 rounded-xl shadow-lg text-white flex flex-col justify-center">
+                    <div class="flex items-center gap-2 text-emerald-400 font-bold mb-4">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span>잠재 연구자 영입 효과 예측</span>
+                    </div>
+
+                    <p class="text-slate-300 text-sm mb-6 leading-relaxed">
+                        미참여 연구자 중 연구 키워드 유사도가 높은 <span class="text-white font-bold">45명</span>(Top 15%)을
+                        플랫폼으로 영입할 경우 예상되는 연구 역량 증대 효과입니다.
+                    </p>
+
+                    <div class="bg-white/5 rounded-lg p-4 border border-white/10 flex-1 relative min-h-[200px]">
+                        <canvas id="chartSimulation"></canvas>
+                    </div>
+
+                    <div class="mt-6 flex justify-between items-center">
+                        <div class="text-xs text-slate-400">
+                            * AI 기반 키워드 매칭 분석 결과
+                        </div>
+                        <button
+                            class="bg-emerald-600 hover:bg-emerald-500 text-white py-2 px-4 rounded-lg text-sm font-bold transition">
+                            잠재 연구자 리스트 보기
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div id="section-kpi" class="content-section hidden">KPI Section Placeholder</div>
+        <div id="section-demo" class="content-section hidden">Demographics Section Placeholder</div>
+        <div id="section-perf" class="content-section hidden">Performance Section Placeholder</div>
+
+    </main>
+
+    <script>
+        // Register Plugins
+        Chart.register(ChartDataLabels);
+
+        document.addEventListener("DOMContentLoaded", function () {
+            renderParticipationChart();
+            renderPlatformStackChart();
+            renderPlatformBudgetChart();
+            renderSimulationChart();
+        });
+
+        // --- 1. 전체 참여 비율 (Pie Chart) ---
+        function renderParticipationChart() {
+            const ctx = document.getElementById('chartParticipation');
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['미참여', '참여중'],
+                    datasets: [{
+                        data: [253, 76],
+                        backgroundColor: ['#e2e8f0', '#f97316'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        datalabels: {
+                            color: (ctx) => ctx.dataIndex === 0 ? '#475569' : '#fff',
+                            font: { weight: 'bold', size: 12 },
+                            textAlign: 'center',
+                            formatter: (value, ctx) => {
+                                let sum = 0;
+                                ctx.chart.data.datasets[0].data.map(data => sum += data);
+                                let percentage = (value * 100 / sum).toFixed(1) + "%";
+                                return `${value}명\n(${percentage})`;
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- 2. 플랫폼별 참여 현황 (Stacked Bar) ---
+        function renderPlatformStackChart() {
+            const ctx = document.getElementById('chartPlatformStack');
+            const labels = ['데이터', '의사과학자', '정밀재생', '정밀의료기기', '면역/마이크로', '신약'];
+
+            // Mock Data Breakdown
+            const dataProf = [10, 8, 6, 5, 4, 4]; // 교수
+            const dataAssoc = [8, 7, 5, 4, 4, 3]; // 부교수
+            const dataAssist = [6, 6, 4, 3, 3, 3]; // 조교수
+            const dataFellow = [5, 5, 3, 3, 3, 3]; // 임상강사/전임의
+            const dataOther = [5, 5, 3, 3, 2, 2]; // 기타
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: '교수', data: dataProf, backgroundColor: '#1e3a8a' },
+                        { label: '부교수', data: dataAssoc, backgroundColor: '#3b82f6' },
+                        { label: '조교수', data: dataAssist, backgroundColor: '#93c5fd' },
+                        { label: '임상강사', data: dataFellow, backgroundColor: '#cbd5e1' },
+                        { label: '기타', data: dataOther, backgroundColor: '#f1f5f9' }
+                    ]
+                },
+                options: {
+                    indexAxis: 'y', // Horizontal Stacked
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { stacked: true, beginAtZero: true, title: { display: true, text: '인원(명)' } },
+                        y: { stacked: true }
+                    },
+                    plugins: {
+                        legend: { position: 'top', align: 'end' },
+                        datalabels: { display: false }
+                    }
+                }
+            });
+        }
+
+        // --- 3. 연구비 총액 비교 (Bar with Non-participants) ---
+        function renderPlatformBudgetChart() {
+            const ctx = document.getElementById('chartPlatformBudget');
+            const labels = ['데이터', '의사과학자', '정밀재생', '기기', '면역', '신약', '미참여(Non)'];
+
+            const data = [45.5, 42.1, 28.5, 22.0, 18.2, 15.5, 65.2];
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '연구비 총액 (억원)',
+                        data: data,
+                        backgroundColor: (ctx) => {
+                            return ctx.dataIndex === 6 ? '#94a3b8' : '#10b981';
+                        },
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            anchor: 'end', align: 'top',
+                            color: '#0f172a', font: { weight: 'bold' },
+                            formatter: (v) => v + '억'
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { borderDash: [2, 2] } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // --- 4. Simulation Chart (Stacked Increase) ---
+        function renderSimulationChart() {
+            const ctx = document.getElementById('chartSimulation');
+
+            const labels = ['참여 연구자(명)', '총 연구비(억원)', '논문 실적(편)'];
+            const currentData = [76, 130.5, 595];
+            const increaseData = [45, 45.2, 120];
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '영입 효과 (증가분)',
+                            data: increaseData,
+                            backgroundColor: '#10b981', // Emerald
+                            borderRadius: 4,
+                            order: 0 // Stack on top
+                        },
+                        {
+                            label: '현재 수준',
+                            data: currentData,
+                            backgroundColor: '#3b82f6', // Blue
+                            borderRadius: 4,
+                            order: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y', // 가로형 막대
+                    scales: {
+                        x: {
+                            stacked: true,
+                            grid: { display: false, drawBorder: false },
+                            ticks: { color: '#cbd5e1', font: { weight: 'bold' } }
+                        },
+                        y: {
+                            stacked: true,
+                            ticks: { color: 'white', font: { weight: 'bold' } },
+                            grid: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#cbd5e1', boxWidth: 12 }
+                        },
+                        datalabels: {
+                            color: '#fff',
+                            font: { weight: 'bold', size: 11 },
+                            formatter: (value, ctx) => {
+                                const dsIndex = ctx.datasetIndex;
+                                if (dsIndex === 0) return `+${value}`; // 증가분
+                                return value;
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function showSection(id) { console.log("Switching " + id); }
+    </script>
+</body>
+
+</html>

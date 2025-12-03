@@ -40,9 +40,10 @@ def migrate_researchers():
                 researcher = {
                     "name": row.get('name', ''),
                     "department": row.get('department', ''),
-                    "specialty": row.get('specialty', ''),
-                    "keywords": str(row.get('keywords', '')), # Ensure string
-                    "profile_url": row.get('href', ''),
+                    "position": row.get('position', ''), # Added position
+                    "keywords": eval(str(row.get('keywords', '[]'))) if str(row.get('keywords', '')).startswith('[') else [str(row.get('keywords', ''))] if row.get('keywords') else [],
+                    "image_url": row.get('image_url', ''), # Added image_url
+                    "major_research": row.get('major_research', ''), # Added major_research
                     "embedding": embedding
                 }
                 researchers_data.append(researcher)
@@ -74,7 +75,8 @@ def migrate_projects():
                 
                 project = {
                     "title": row.get('title', ''),
-                    "researcher_name": row.get('pi', ''), # Assuming 'pi' is the researcher name column
+                    "researcher_name": row.get('researcher_name', ''), # Use researcher_name if available
+                    "pi": row.get('pi', ''), # Map 'pi' column correctly
                     "year": str(row.get('year', '')),
                     "budget": str(row.get('budget', '')),
                     "embedding": embedding

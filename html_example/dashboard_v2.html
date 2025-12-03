@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>구로병원 연구자 허브 - 인력 분석 강화판</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js Datalabels Plugin (For % display) -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        .nav-btn.active {
+            background-color: #e0f2fe;
+            color: #0c4a6e;
+            border-right: 4px solid #0369a1;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 h-screen flex overflow-hidden">
+
+    <!-- Sidebar (Same as before) -->
+    <aside class="w-64 bg-white border-r border-gray-200 flex flex-col z-20 shadow-sm shrink-0">
+        <div class="h-16 flex items-center px-6 border-b border-gray-100">
+            <i class="fa-solid fa-hospital-user text-blue-900 text-xl mr-3"></i>
+            <span class="font-bold text-lg text-slate-800">Research Hub</span>
+        </div>
+        <nav class="flex-1 py-6 space-y-1">
+            <button onclick="showSection('kpi')" id="btn-kpi"
+                class="nav-btn w-full text-left px-6 py-3 text-slate-500 hover:bg-slate-50 transition-colors font-medium">
+                <i class="fa-solid fa-chart-line w-6"></i> 핵심 요약 (KPI)
+            </button>
+            <button onclick="showSection('demo')" id="btn-demo"
+                class="nav-btn active w-full text-left px-6 py-3 text-slate-500 hover:bg-slate-50 transition-colors font-medium">
+                <i class="fa-solid fa-users w-6"></i> 인력 구성 및 분포
+            </button>
+            <button onclick="showSection('perf')" id="btn-perf"
+                class="nav-btn w-full text-left px-6 py-3 text-slate-500 hover:bg-slate-50 transition-colors font-medium">
+                <i class="fa-solid fa-trophy w-6"></i> 연구 성과 분석
+            </button>
+            <button onclick="showSection('platform')" id="btn-platform"
+                class="nav-btn w-full text-left px-6 py-3 text-slate-500 hover:bg-slate-50 transition-colors font-medium">
+                <i class="fa-solid fa-flask w-6"></i> 연구 플랫폼 현황
+            </button>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-8 relative">
+
+        <header class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800">인력 구성 및 분포</h1>
+                <p class="text-slate-500 text-sm mt-1">구로병원 연구자 직위, 소속, 경력 현황 심층 분석</p>
+            </div>
+        </header>
+
+        <!-- SECTION: Demographics (Default View) -->
+        <div id="section-demo" class="content-section space-y-6">
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                <!-- 1. 직위별 분포 (Donut with Center Text & Labels) -->
+                <div class="lg:col-span-5 bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col">
+                    <h3 class="text-lg font-bold mb-4 border-b pb-2">직위별 연구자 분포</h3>
+                    <div class="relative flex-1 flex items-center justify-center min-h-[300px]">
+                        <canvas id="chartPosition"></canvas>
+                        <!-- Center Text Overlay -->
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span class="text-slate-400 text-sm font-medium">Total</span>
+                            <span class="text-3xl font-bold text-slate-800">329<span
+                                    class="text-base font-normal ml-1">명</span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Top 10 진료과 (Interactive Bar) -->
+                <div class="lg:col-span-7 bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col">
+                    <div class="flex justify-between items-center mb-4 border-b pb-2">
+                        <h3 class="text-lg font-bold">Top 10 진료과 연구 인력</h3>
+                        <!-- Toggle Buttons -->
+                        <div class="bg-slate-100 p-1 rounded-lg flex text-xs font-medium">
+                            <button onclick="toggleDeptChart('simple')" id="btn-dept-simple"
+                                class="px-3 py-1 rounded bg-white text-slate-800 shadow-sm transition">단순 보기</button>
+                            <button onclick="toggleDeptChart('detail')" id="btn-dept-detail"
+                                class="px-3 py-1 rounded text-slate-500 hover:text-slate-800 transition">상세 분포
+                                (직위)</button>
+                        </div>
+                    </div>
+                    <div class="relative flex-1 min-h-[300px]">
+                        <canvas id="chartDept"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. 임용 연도별 분포 (New) -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                <h3 class="text-lg font-bold mb-2">연구자 임용 연도 분포 (연구 경력)</h3>
+                <p class="text-xs text-slate-400 mb-6">X축: 임용 연도 (5년 단위 구간), Y축: 해당 기간 임용된 연구자 수</p>
+                <div class="relative h-64">
+                    <canvas id="chartYear"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Other sections hidden for prototype simplicity -->
+        <div id="section-kpi" class="content-section hidden">... (KPI Section Hidden) ...</div>
+        <div id="section-perf" class="content-section hidden">... (Performance Section Hidden) ...</div>
+        <div id="section-platform" class="content-section hidden">... (Platform Section Hidden) ...</div>
+
+    </main>
+
+    <script>
+        // Register Datalabels Plugin
+        Chart.register(ChartDataLabels);
+
+        let deptChartInstance = null; // To manage toggle state
+
+        document.addEventListener("DOMContentLoaded", function () {
+            renderPositionChart();
+            renderDeptChart('simple'); // Default state
+            renderYearChart();
+        });
+
+        // --- 1. 직위별 분포 (Donut) ---
+        function renderPositionChart() {
+            const ctx = document.getElementById('chartPosition');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['교수', '부교수', '임상조교수', '조교수', '임상강사', '기타'],
+                    datasets: [{
+                        data: [113, 41, 34, 29, 15, 97],
+                        backgroundColor: [
+                            '#1e3a8a', // 교수 (Dark Blue)
+                            '#2563eb', // 부교수
+                            '#3b82f6', // 임상조교수
+                            '#60a5fa', // 조교수
+                            '#93c5fd', // 임상강사
+                            '#cbd5e1'  // 기타 (Gray)
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%', // Create space for center text
+                    plugins: {
+                        legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } },
+                        datalabels: {
+                            color: '#fff',
+                            font: { weight: 'bold', size: 11 },
+                            formatter: (value, ctx) => {
+                                let sum = 0;
+                                let dataArr = ctx.chart.data.datasets[0].data;
+                                dataArr.map(data => { sum += data; });
+                                let percentage = (value * 100 / sum).toFixed(1) + "%";
+                                return percentage; // Show % inside slice
+                            },
+                            // Only show label if slice is big enough
+                            display: function (context) {
+                                return context.dataset.data[context.dataIndex] > 15;
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- 2. Top 10 진료과 (Toggle Logic) ---
+        const deptLabels = ['영상의학과', '순환기내과', '마취통증', '소아청소년', '정형외과', '신경외과', '응급의학', '신경과', '중환자', '종양내과'];
+
+        // Data for Simple View (Total)
+        const deptDataTotal = [30, 20, 19, 18, 13, 13, 12, 11, 10, 9];
+
+        // Data for Stacked View (Simulated breakdown based on typical ratios)
+        const deptDataStacked = {
+            prof: [12, 10, 8, 8, 6, 6, 4, 5, 2, 4], // 교수
+            assoc: [8, 5, 4, 4, 3, 3, 3, 3, 3, 2],  // 부교수
+            assist: [6, 3, 4, 3, 2, 2, 3, 2, 3, 2], // 조교수
+            others: [4, 2, 3, 3, 2, 2, 2, 1, 2, 1]  // 기타
+        };
+
+        function toggleDeptChart(mode) {
+            // UI Button Style Toggle
+            const btnSimple = document.getElementById('btn-dept-simple');
+            const btnDetail = document.getElementById('btn-dept-detail');
+
+            if (mode === 'simple') {
+                btnSimple.className = "px-3 py-1 rounded bg-white text-slate-800 shadow-sm transition font-bold";
+                btnDetail.className = "px-3 py-1 rounded text-slate-500 hover:text-slate-800 transition";
+            } else {
+                btnSimple.className = "px-3 py-1 rounded text-slate-500 hover:text-slate-800 transition";
+                btnDetail.className = "px-3 py-1 rounded bg-white text-slate-800 shadow-sm transition font-bold";
+            }
+
+            renderDeptChart(mode);
+        }
+
+        function renderDeptChart(mode) {
+            const ctx = document.getElementById('chartDept');
+
+            // Destroy existing chart if it exists
+            if (deptChartInstance) {
+                deptChartInstance.destroy();
+            }
+
+            let config = {};
+
+            if (mode === 'simple') {
+                config = {
+                    type: 'bar',
+                    data: {
+                        labels: deptLabels,
+                        datasets: [{
+                            label: '전체 연구자 수',
+                            data: deptDataTotal,
+                            backgroundColor: '#0ea5e9',
+                            borderRadius: 4,
+                            barThickness: 20
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y', // Horizontal Bar
+                        maintainAspectRatio: false,
+                        plugins: { datalabels: { display: false } }, // Hide labels inside bars for simple view
+                        scales: { x: { beginAtZero: true } }
+                    }
+                };
+            } else {
+                // Stacked Config
+                config = {
+                    type: 'bar',
+                    data: {
+                        labels: deptLabels,
+                        datasets: [
+                            { label: '교수', data: deptDataStacked.prof, backgroundColor: '#1e3a8a' },
+                            { label: '부교수', data: deptDataStacked.assoc, backgroundColor: '#3b82f6' },
+                            { label: '조교수', data: deptDataStacked.assist, backgroundColor: '#93c5fd' },
+                            { label: '기타', data: deptDataStacked.others, backgroundColor: '#e2e8f0' }
+                        ]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        maintainAspectRatio: false,
+                        plugins: {
+                            datalabels: { display: false },
+                            legend: { position: 'top' }
+                        },
+                        scales: {
+                            x: { stacked: true },
+                            y: { stacked: true }
+                        }
+                    }
+                };
+            }
+
+            deptChartInstance = new Chart(ctx, config);
+        }
+
+        // --- 3. 임용 연도별 분포 (Histogram) ---
+        function renderYearChart() {
+            const ctx = document.getElementById('chartYear');
+
+            // Data from provided CSV stats (Mean ~1999, Min 1970, Max 2019)
+            // Grouped into 5-year bins
+            const labels = ['1980이전', '1980-84', '1985-89', '1990-94', '1995-99', '2000-04', '2005-09', '2010-14', '2015이후'];
+            const data = [5, 12, 20, 45, 52, 60, 55, 48, 32]; // Simulated distribution based on stats
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '임용 인원 (명)',
+                        data: data,
+                        backgroundColor: (context) => {
+                            // Highlight the peak era (2000-2004)
+                            const index = context.dataIndex;
+                            return index === 5 ? '#f59e0b' : '#cbd5e1'; // Orange for peak, Gray for others
+                        },
+                        borderRadius: 4,
+                        barPercentage: 0.7
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            anchor: 'end',
+                            align: 'top',
+                            color: '#64748b',
+                            font: { size: 10 }
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { display: false } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // Helper for tab switching (kept simple for demo)
+        function showSection(id) {
+            // In a full app, this would toggle visibility. 
+            // For this specific update, we are focusing on the 'demo' section.
+            console.log("Switching to " + id);
+        }
+    </script>
+</body>
+
+</html>

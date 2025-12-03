@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>구로병원 연구자 허브 - 성과 분석 심화판</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <!-- Chart.js BoxPlot Plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/@sgratzl/chartjs-chart-boxplot@4.2.0/build/index.umd.min.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+
+        .nav-btn.active {
+            background-color: #e0f2fe;
+            color: #0c4a6e;
+            border-right: 4px solid #0369a1;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-800 h-screen flex overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white border-r border-gray-200 flex flex-col z-20 shadow-sm shrink-0">
+        <div class="h-16 flex items-center px-6 border-b border-gray-100">
+            <i class="fa-solid fa-hospital-user text-blue-900 text-xl mr-3"></i>
+            <span class="font-bold text-lg text-slate-800">Research Hub</span>
+        </div>
+        <nav class="flex-1 py-6 space-y-1">
+            <button onclick="showSection('kpi')" id="btn-kpi"
+                class="nav-btn w-full text-left px-6 py-3 text-slate-500 hover:bg-slate-50 transition-colors font-medium">
+                <i class="fa-solid fa-chart-line w-6"></i> 핵심 요약 (KPI)
+            </button>
+            <button onclick="showSection('demo')" id="btn-demo"
+                class="nav-btn w-full text-left px-6 py-3 text-slate-500 hover:bg-slate-50 transition-colors font-medium">
+                <i class="fa-solid fa-users w-6"></i> 인력 구성 및 분포
+            </button>
+            <button onclick="showSection('perf')" id="btn-perf"
+                class="nav-btn active w-full text-left px-6 py-3 text-slate-500 hover:bg-slate-50 transition-colors font-medium">
+                <i class="fa-solid fa-trophy w-6"></i> 연구 성과 분석
+            </button>
+            <button onclick="showSection('platform')" id="btn-platform"
+                class="nav-btn w-full text-left px-6 py-3 text-slate-500 hover:bg-slate-50 transition-colors font-medium">
+                <i class="fa-solid fa-flask w-6"></i> 연구 플랫폼 현황
+            </button>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-8 relative">
+
+        <header class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800">연구 성과 분석</h1>
+                <p class="text-slate-500 text-sm mt-1">국가 R&D 수주액 및 논문 실적 심층 분석 (Top 10 진료과 & 직위별 분포)</p>
+            </div>
+        </header>
+
+        <!-- SECTION: Performance (Default View) -->
+        <div id="section-perf" class="content-section space-y-6">
+
+            <!-- 1. 진료과별 성과 (Dual Axis Chart) -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 border-b pb-4 gap-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800">진료과별 국가 R&D 및 논문 현황 (Top 10)</h3>
+                        <p class="text-xs text-slate-400 mt-1">왼쪽 막대: 연구비(억원), 오른쪽 막대: 논문 수(편)</p>
+                    </div>
+                    <!-- Sort Toggle Buttons -->
+                    <div class="bg-slate-100 p-1 rounded-lg flex text-xs font-medium shrink-0">
+                        <button onclick="togglePerfSort('budget')" id="btn-sort-budget"
+                            class="px-3 py-1.5 rounded bg-white text-emerald-700 shadow-sm transition font-bold border border-emerald-100">
+                            <i class="fa-solid fa-sack-dollar mr-1"></i>연구비 순 정렬
+                        </button>
+                        <button onclick="togglePerfSort('paper')" id="btn-sort-paper"
+                            class="px-3 py-1.5 rounded text-slate-500 hover:text-slate-800 transition">
+                            <i class="fa-solid fa-book mr-1"></i>논문 수 순 정렬
+                        </button>
+                    </div>
+                </div>
+
+                <div class="relative h-[350px]">
+                    <canvas id="chartDualPerf"></canvas>
+                </div>
+            </div>
+
+            <!-- 2. 직위별 분포 (Box Plots) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Papers Box Plot -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                    <h3 class="text-lg font-bold mb-1">직위별 논문 실적 분포</h3>
+                    <p class="text-xs text-slate-400 mb-4">Box Plot: 최소, 1분위, 중앙값, 3분위, 최대값 및 이상치(점)</p>
+                    <div class="relative h-64">
+                        <canvas id="chartBoxPaper"></canvas>
+                    </div>
+                </div>
+                <!-- Budget Box Plot -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                    <h3 class="text-lg font-bold mb-1">직위별 연구비 수주 분포</h3>
+                    <p class="text-xs text-slate-400 mb-4">단위: 억원 / 일부 고액 수주자(Outlier) 확인 가능</p>
+                    <div class="relative h-64">
+                        <canvas id="chartBoxBudget"></canvas>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Hidden Sections (Placeholders) -->
+        <div id="section-kpi" class="content-section hidden">KPI Section Placeholder</div>
+        <div id="section-demo" class="content-section hidden">Demographics Section Placeholder</div>
+        <div id="section-platform" class="content-section hidden">Platform Section Placeholder</div>
+
+    </main>
+
+    <script>
+        // Register Plugins
+        Chart.register(ChartDataLabels);
+        // Note: BoxPlot plugin registers itself automatically
+
+        let perfChartInstance = null;
+
+        // --- Mock Data for Performance ---
+        const allDeptPerfData = [
+            { name: '순환기내과', budget: 25.4, papers: 42 },
+            { name: '감염내과', budget: 18.2, papers: 35 },
+            { name: '종양내과', budget: 15.1, papers: 38 },
+            { name: '소화기내과', budget: 12.8, papers: 30 },
+            { name: '신경과', budget: 10.5, papers: 28 },
+            { name: '정형외과', budget: 9.2, papers: 45 },
+            { name: '영상의학과', budget: 8.5, papers: 52 },
+            { name: '재활의학과', budget: 7.1, papers: 15 },
+            { name: '호흡기내과', budget: 6.8, papers: 22 },
+            { name: '신경외과', budget: 6.5, papers: 25 },
+            { name: '안과', budget: 5.2, papers: 18 },
+            { name: '이비인후과', budget: 4.8, papers: 20 },
+            { name: '피부과', budget: 4.5, papers: 12 },
+            { name: '비뇨의학과', budget: 4.2, papers: 15 },
+            { name: '성형외과', budget: 3.5, papers: 10 }
+        ];
+
+        // --- Init ---
+        document.addEventListener("DOMContentLoaded", function () {
+            renderPerfChart('budget'); // Initial sort by budget
+            renderBoxPlots();
+        });
+
+        // --- 1. Top 10 Performance Chart (Dual Axis) Logic ---
+        function togglePerfSort(mode) {
+            const btnBudget = document.getElementById('btn-sort-budget');
+            const btnPaper = document.getElementById('btn-sort-paper');
+
+            if (mode === 'budget') {
+                btnBudget.className = "px-3 py-1.5 rounded bg-white text-emerald-700 shadow-sm transition font-bold border border-emerald-100";
+                btnPaper.className = "px-3 py-1.5 rounded text-slate-500 hover:text-slate-800 transition";
+            } else {
+                btnBudget.className = "px-3 py-1.5 rounded text-slate-500 hover:text-slate-800 transition";
+                btnPaper.className = "px-3 py-1.5 rounded bg-white text-purple-700 shadow-sm transition font-bold border border-purple-100";
+            }
+
+            renderPerfChart(mode);
+        }
+
+        function renderPerfChart(mode) {
+            const ctx = document.getElementById('chartDualPerf');
+
+            let sortedData = [...allDeptPerfData];
+            if (mode === 'budget') {
+                sortedData.sort((a, b) => b.budget - a.budget);
+            } else {
+                sortedData.sort((a, b) => b.papers - a.papers);
+            }
+            const top10 = sortedData.slice(0, 10);
+
+            const labels = top10.map(d => d.name);
+            const budgetData = top10.map(d => d.budget);
+            const paperData = top10.map(d => d.papers);
+
+            if (perfChartInstance) perfChartInstance.destroy();
+
+            perfChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '연구비 (억원)',
+                            data: budgetData,
+                            backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                            borderColor: 'rgba(16, 185, 129, 1)',
+                            borderWidth: 1,
+                            yAxisID: 'y',
+                            order: 1
+                        },
+                        {
+                            label: '논문 수 (편)',
+                            data: paperData,
+                            backgroundColor: 'rgba(147, 51, 234, 0.7)',
+                            borderColor: 'rgba(147, 51, 234, 1)',
+                            borderWidth: 1,
+                            yAxisID: 'y1',
+                            order: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        datalabels: {
+                            anchor: 'end', align: 'top', color: '#64748b', font: { size: 10, weight: 'bold' },
+                            formatter: (value, context) => {
+                                if (mode === 'budget' && context.datasetIndex === 0) return value;
+                                if (mode === 'paper' && context.datasetIndex === 1) return value;
+                                return '';
+                            }
+                        },
+                        tooltip: { mode: 'index', intersect: false }
+                    },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: {
+                            type: 'linear', display: true, position: 'left',
+                            title: { display: true, text: '연구비 (억원)', color: '#10b981' },
+                            grid: { borderDash: [2, 2] }
+                        },
+                        y1: {
+                            type: 'linear', display: true, position: 'right',
+                            title: { display: true, text: '논문 수 (편)', color: '#9333ea' },
+                            grid: { drawOnChartArea: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- 2. Box Plots for Position Stats ---
+        function renderBoxPlots() {
+            const labels = ['교수', '부교수', '조교수', '임상강사', '전임의'];
+
+            // Raw Mock Data for Distributions (Arrays of values)
+            const paperDist = [
+                [2, 5, 8, 8, 10, 12, 15, 20, 35, 42], // 교수: Broad range, high max
+                [1, 3, 5, 6, 8, 9, 12, 15],           // 부교수
+                [0, 1, 2, 4, 5, 5, 6, 8],             // 조교수
+                [0, 0, 1, 1, 2, 3],                   // 임상강사
+                [0, 0, 0, 1]                          // 전임의
+            ];
+
+            const budgetDist = [
+                [0, 0, 1, 2, 5, 8, 15, 25, 40], // 교수: Very skewed (0 to 40억)
+                [0, 0, 1, 2, 3, 5, 8],          // 부교수
+                [0, 0, 0, 1, 2, 3],             // 조교수
+                [0, 0, 0, 0, 1],                // 임상강사
+                [0, 0, 0]                       // 전임의
+            ];
+
+            // Chart 1: Paper Box Plot
+            new Chart(document.getElementById('chartBoxPaper'), {
+                type: 'boxplot',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '논문 수 분포',
+                        data: paperDist,
+                        backgroundColor: 'rgba(30, 58, 138, 0.4)', // Blue tint
+                        borderColor: '#1e3a8a',
+                        borderWidth: 1,
+                        outlierColor: '#ef4444', // Red dots for outliers
+                        padding: 10,
+                        itemRadius: 3
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: { display: false } // Boxplot handles its own tooltips
+                    },
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: '논문 수 (편)' } }
+                    }
+                }
+            });
+
+            // Chart 2: Budget Box Plot
+            new Chart(document.getElementById('chartBoxBudget'), {
+                type: 'boxplot',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '연구비 분포',
+                        data: budgetDist,
+                        backgroundColor: 'rgba(6, 78, 59, 0.4)', // Green tint
+                        borderColor: '#064e3b',
+                        borderWidth: 1,
+                        outlierColor: '#f59e0b', // Orange dots for outliers
+                        itemRadius: 3
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: '연구비 (억원)' } }
+                    }
+                }
+            });
+        }
+
+        function showSection(id) {
+            console.log("Switching to " + id);
+        }
+    </script>
+</body>
+
+</html>
