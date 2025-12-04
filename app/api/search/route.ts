@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 import { NextResponse } from 'next/server';
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
             apiKey: process.env.OPENAI_API_KEY,
         });
 
-        const { query } = await req.json();
+        const { query, department } = await req.json();
 
         if (!query) {
             return NextResponse.json({ error: 'Query is required' }, { status: 400 });
@@ -43,6 +44,7 @@ export async function POST(req: Request) {
                 query_embedding: embedding,
                 match_threshold: 0.3, // Adjust threshold as needed
                 match_count: 5,
+                filter_department: department === 'All' ? null : department
             }
         );
 
@@ -61,6 +63,7 @@ export async function POST(req: Request) {
                 query_embedding: embedding,
                 match_threshold: 0.3,
                 match_count: 5,
+                filter_department: department === 'All' ? null : department
             }
         );
 
@@ -76,7 +79,7 @@ export async function POST(req: Request) {
         let aiSummary = '';
         try {
             const context = `
-        Researchers: ${JSON.stringify(researchers?.map((r: any) => ({ name: r.name, specialty: r.specialty })))}
+        Researchers: ${JSON.stringify(researchers?.map((r: any) => ({ name: r.name, specialty: r.specialty, department: r.department })))}
         Projects: ${JSON.stringify(projects?.map((p: any) => ({ title: p.title, researcher: p.researcher_name })))}
         `;
 
@@ -84,7 +87,7 @@ export async function POST(req: Request) {
                 model: "gpt-4o",
                 messages: [
                     { role: "system", content: "You are a helpful assistant for a hospital research dashboard. Summarize the search results for the user's query. Highlight key researchers and projects. Please answer in Korean." },
-                    { role: "user", content: `Query: ${query}\n\nContext:\n${context}` }
+                    { role: "user", content: `Query: ${query}\nFilter: ${department || 'None'}\n\nContext:\n${context}` }
                 ],
                 max_tokens: 150
             });
@@ -103,5 +106,56 @@ export async function POST(req: Request) {
     } catch (error: any) {
         console.error('Search API Error:', error);
         return NextResponse.json({ error: `Internal Server Error: ${error.message}` }, { status: 500 });
+    }
+}
+
+export async function GET(request: Request) {
+    try {
+        const { searchParams } = new URL(request.url);
+        const department = searchParams.get('department');
+
+        // Fetch departments
+        const { data: deptData, error: deptError } = await supabase
+            .from('researchers')
+            .select('department')
+            .not('department', 'is', null);
+
+        if (deptError) throw deptError;
+
+        // Extract unique departments
+        const departments = Array.from(new Set(deptData.map(item => item.department))).sort();
+
+        // Fetch initial researchers (limit 100)
+        let query = supabase.from('researchers').select('*');
+
+        if (department && department !== 'All') {
+            query = query.eq('department', department);
+        }
+
+        const { data: initialResearchers, error: resError } = await query.limit(100);
+
+        if (resError) throw resError;
+
+        // Fetch initial projects based on the fetched researchers
+        let initialProjects: any[] = [];
+        if (initialResearchers && initialResearchers.length > 0) {
+            const researcherNames = initialResearchers.map((r: any) => r.name);
+            // Fetch projects where pi is in the list of fetched researchers
+            // Limit to 10 random-ish projects (Supabase doesn't have random easily, just take first 10)
+            const { data: projects, error: projError } = await supabase
+                .from('projects')
+                .select('*')
+                .in('pi', researcherNames)
+                .limit(10);
+
+            if (!projError && projects) {
+                initialProjects = projects;
+            }
+        }
+
+        return NextResponse.json({ departments, initialResearchers, initialProjects });
+    } catch (error: any) {
+        console.error('Error fetching initial data:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

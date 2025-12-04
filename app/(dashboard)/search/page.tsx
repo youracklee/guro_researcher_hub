@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { FaSearch, FaUserMd, FaFlask, FaRobot, FaArrowLeft, FaMicrochip, FaHandshake } from "react-icons/fa";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FaSearch, FaUserMd, FaFlask, FaRobot, FaArrowLeft, FaMicrochip, FaHandshake, FaArrowRight } from "react-icons/fa";
 import { researchers as mockResearchers, recruitmentData as mockRecruitmentData } from "@/lib/mocks";
 
 export default function SearchPage() {
@@ -14,6 +15,40 @@ export default function SearchPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [selectedResearcher, setSelectedResearcher] = useState<any>(null);
+    const [departments, setDepartments] = useState<string[]>([]);
+    const [selectedDepartment, setSelectedDepartment] = useState<string>("산부인과");
+
+    useEffect(() => {
+        const fetchInitialData = async () => {
+            setLoading(true);
+            try {
+                // Fetch with default department filter
+                const res = await fetch(`/api/search?department=${encodeURIComponent(selectedDepartment)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.departments) {
+                        setDepartments(data.departments);
+                    }
+                    if (data.initialResearchers) {
+                        // Set initial results to show real data instead of mocks
+                        setResults({
+                            researchers: data.initialResearchers,
+                            projects: data.initialProjects || [] // Use fetched projects
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch initial data:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        // Only fetch initial data if there is no active search query
+        if (!query) {
+            fetchInitialData();
+        }
+    }, [selectedDepartment]); // Re-run when department changes
 
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -25,11 +60,11 @@ export default function SearchPage() {
         setSelectedResearcher(null);
 
         try {
-            console.log("Sending search request for:", query);
+            console.log("Sending search request for:", query, "Department:", selectedDepartment);
             const res = await fetch('/api/search', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query }),
+                body: JSON.stringify({ query, department: selectedDepartment }),
             });
 
             console.log("API Response Status:", res.status);
@@ -72,22 +107,58 @@ export default function SearchPage() {
                 </header>
             )}
 
-            {/* Search Input - Only show when not in detail view */}
+            {/* Search Section */}
             {!selectedResearcher && (
-                <form onSubmit={handleSearch} className="flex gap-4">
-                    <div className="relative flex-1">
-                        <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
-                        <Input
-                            className="pl-10 h-12 text-lg bg-white shadow-sm"
-                            placeholder="예: 인공지능을 활용한 영상 진단 연구"
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                        />
-                    </div>
-                    <Button type="submit" size="lg" className="h-12 px-8 bg-indigo-600 hover:bg-indigo-700" disabled={loading}>
-                        {loading ? "검색 중..." : "검색"}
-                    </Button>
-                </form>
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 shrink-0">
+                    <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 items-end md:items-center">
+
+                        {/* Department Filter */}
+                        <div className="w-full md:w-48 shrink-0">
+                            <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">진료과 선택</label>
+                            <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                                <SelectTrigger className="w-full h-[50px] bg-slate-50 border-slate-200 text-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:ring-offset-0 font-medium">
+                                    <SelectValue placeholder="진료과 선택" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="All">전체 진료과</SelectItem>
+                                    {departments.map((dept) => (
+                                        <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* NL Search Input */}
+                        <div className="flex-1 w-full">
+                            <label className="block text-xs font-bold text-slate-500 mb-1 ml-1">연구 주제 검색</label>
+                            <div className="relative group">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                    <FaRobot className="text-indigo-400 group-focus-within:text-indigo-600 transition" />
+                                </div>
+                                <input
+                                    type="text"
+                                    className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-base py-3 pl-10 pr-12 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition shadow-sm placeholder-slate-400 h-[50px]"
+                                    placeholder="예: '인공지능을 활용한 영상 진단 연구'"
+                                    value={query}
+                                    onChange={(e) => setQuery(e.target.value)}
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="absolute inset-y-0 right-2 flex items-center"
+                                >
+                                    <div className={`bg-indigo-600 hover:bg-indigo-700 text-white w-8 h-8 rounded-lg flex items-center justify-center transition shadow-md ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                        {loading ? (
+                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        ) : (
+                                            <FaArrowRight className="text-sm" />
+                                        )}
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             )}
 
             {/* Loading Indicator */}
@@ -115,14 +186,14 @@ export default function SearchPage() {
 
                     {/* AI Summary (Only show if results exist and no error) */}
                     {results?.aiSummary && !error && (
-                        <Card className="bg-indigo-50 border-indigo-100">
+                        <Card className="bg-indigo-50 border-indigo-100 h-auto w-full">
                             <CardHeader className="pb-2">
                                 <CardTitle className="flex items-center text-indigo-700 text-lg">
                                     <FaRobot className="mr-2" /> AI 요약
                                 </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-slate-700 leading-relaxed whitespace-pre-line">{results.aiSummary}</p>
+                                <p className="text-slate-700 leading-relaxed whitespace-pre-line break-words">{results.aiSummary}</p>
                             </CardContent>
                         </Card>
                     )}
@@ -137,46 +208,93 @@ export default function SearchPage() {
 
                             {(() => {
                                 const isResultValid = results && !error && Array.isArray(results.researchers);
-                                const displayResearchers = isResultValid ? results.researchers : mockResearchers;
+                                // Use results.researchers if available, otherwise empty (don't use mocks anymore to avoid confusion)
+                                const displayResearchers = isResultValid ? results.researchers : [];
 
                                 return displayResearchers?.length > 0 ? (
                                     displayResearchers.map((researcher: any, idx: number) => {
                                         if (!researcher) return null;
                                         return (
-                                            <Card
+                                            <div
                                                 key={researcher.id || idx}
-                                                className="hover:shadow-md transition-shadow cursor-pointer hover:border-indigo-300"
                                                 onClick={() => setSelectedResearcher(researcher)}
+                                                className="group bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300 transition cursor-pointer relative overflow-hidden"
                                             >
-                                                <CardContent className="p-4 flex items-start gap-4">
-                                                    <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-2xl overflow-hidden">
-                                                        {researcher.image_url ? (
-                                                            <img src={researcher.image_url} alt={researcher.name_ko || researcher.name || "Researcher"} className="w-full h-full object-cover" />
-                                                        ) : (
-                                                            "👨‍⚕️"
-                                                        )}
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="font-bold text-slate-800">{researcher.name_ko || researcher.name || "이름 없음"}</h3>
-                                                        <p className="text-sm text-slate-500">{researcher.department || "소속 없음"} | {researcher.position || researcher.specialty || "직위 없음"}</p>
-                                                        <div className="flex items-center gap-2 mt-2">
-                                                            {isResultValid && (
-                                                                <Badge variant="secondary" className="text-xs">유사도: {((researcher.similarity || 0) * 100).toFixed(0)}%</Badge>
-                                                            )}
-                                                            {!isResultValid && researcher.keywords && (
-                                                                <div className="flex gap-1 flex-wrap">
-                                                                    {researcher.keywords.slice(0, 2).map((k: string, i: number) => (
-                                                                        <Badge key={i} variant="outline" className="text-xs text-slate-500">{k}</Badge>
-                                                                    ))}
-                                                                </div>
-                                                            )}
-                                                            {(researcher.profile_url || researcher.image_url) && (
-                                                                <span className="text-xs text-indigo-600 hover:underline">상세보기</span>
+                                                <div className="absolute top-0 left-0 w-1 h-full bg-blue-500 group-hover:bg-blue-600 transition"></div>
+                                                <div className="flex justify-between items-start mb-4 pl-2">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 text-xl font-bold border border-slate-200 overflow-hidden">
+                                                            {researcher.image_url ? (
+                                                                <img src={researcher.image_url} alt={researcher.name} className="w-full h-full object-cover object-top scale-125" />
+                                                            ) : (
+                                                                <FaUserMd />
                                                             )}
                                                         </div>
+                                                        <div>
+                                                            <div className="flex items-center gap-2">
+                                                                <h4 className="font-bold text-slate-800">{researcher.name_ko || researcher.name}</h4>
+                                                                {researcher.position && (
+                                                                    <span className="text-xs text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{researcher.position}</span>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-xs text-slate-500">{researcher.department}</p>
+                                                        </div>
                                                     </div>
-                                                </CardContent>
-                                            </Card>
+                                                    {isResultValid && (
+                                                        <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded font-bold">
+                                                            {(researcher.similarity * 100).toFixed(0)}% 일치
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="pl-2 space-y-2 mb-4">
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {(researcher.keywords || []).slice(0, 3).map((k: string, i: number) => (
+                                                            <span key={i} className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded">#{k}</span>
+                                                        ))}
+                                                    </div>
+                                                    {(researcher.major_research || researcher.bio) && (
+                                                        <p className="text-xs text-slate-400 line-clamp-2">
+                                                            {researcher.major_research || researcher.bio}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <div className="pl-2 pt-3 border-t border-slate-50 flex flex-col gap-2">
+                                                    <div className="flex items-center gap-3 text-xs text-slate-500 font-medium">
+                                                        <span className="flex items-center"><FaFlask className="mr-1 text-indigo-400" />논문 {researcher.publications || researcher.recent_papers_3yr || 0}</span>
+                                                        <span className="flex items-center"><FaHandshake className="mr-1 text-emerald-400" />과제 {researcher.projects || researcher.total_pi_count || 0}</span>
+                                                    </div>
+                                                    {researcher.platforms && researcher.platforms.length > 0 && (
+                                                        <div className="flex flex-wrap gap-1">
+                                                            {researcher.platforms.map((p: string, i: number) => {
+                                                                const platformColors: Record<string, string> = {
+                                                                    "정밀의료기기": "bg-blue-50 text-blue-700 border-blue-100",
+                                                                    "정밀재생": "bg-emerald-50 text-emerald-700 border-emerald-100",
+                                                                    "면역-마이크로바이옴": "bg-purple-50 text-purple-700 border-purple-100",
+                                                                    "신약": "bg-rose-50 text-rose-700 border-rose-100",
+                                                                    "데이터": "bg-cyan-50 text-cyan-700 border-cyan-100",
+                                                                    "혁신형의사과학자": "bg-amber-50 text-amber-700 border-amber-100"
+                                                                };
+                                                                const iconColors: Record<string, string> = {
+                                                                    "정밀의료기기": "text-blue-500",
+                                                                    "정밀재생": "text-emerald-500",
+                                                                    "면역-마이크로바이옴": "text-purple-500",
+                                                                    "신약": "text-rose-500",
+                                                                    "데이터": "text-cyan-500",
+                                                                    "혁신형의사과학자": "text-amber-500"
+                                                                };
+                                                                const colorClass = platformColors[p] || "bg-slate-50 text-slate-700 border-slate-100";
+                                                                const iconClass = iconColors[p] || "text-slate-500";
+
+                                                                return (
+                                                                    <span key={i} className={`text-[10px] px-1.5 py-0.5 rounded border flex items-center ${colorClass}`}>
+                                                                        <FaMicrochip className={`mr-1 text-[8px] ${iconClass}`} />{p}
+                                                                    </span>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
                                         );
                                     })
                                 ) : (
@@ -247,9 +365,9 @@ export default function SearchPage() {
                         </button>
 
                         <div className="flex flex-col items-center text-center mb-6">
-                            <div className="w-32 h-32 rounded-full bg-slate-100 flex items-center justify-center text-5xl overflow-hidden mb-4 border-4 border-white shadow-md">
+                            <div className="w-32 h-32 rounded-full bg-white flex items-center justify-center text-5xl overflow-hidden mb-4 border-4 border-white shadow-md">
                                 {selectedResearcher.image_url ? (
-                                    <img src={selectedResearcher.image_url} alt={selectedResearcher.name_ko} className="w-full h-full object-cover" />
+                                    <img src={selectedResearcher.image_url} alt={selectedResearcher.name_ko} className="w-full h-full object-cover object-top scale-125" />
                                 ) : (
                                     "👨‍⚕️"
                                 )}
@@ -270,29 +388,24 @@ export default function SearchPage() {
                             {/* Stats Grid */}
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="bg-slate-50 p-3 rounded-lg text-center border border-slate-100">
-                                    <div className="text-xl font-bold text-indigo-600">{selectedResearcher.publications || 0}</div>
+                                    <div className="text-xl font-bold text-indigo-600">{selectedResearcher.publications || selectedResearcher.recent_papers_3yr || 0}</div>
                                     <div className="text-xs text-slate-500">논문 수</div>
                                 </div>
                                 <div className="bg-slate-50 p-3 rounded-lg text-center border border-slate-100">
-                                    <div className="text-xl font-bold text-emerald-600">{selectedResearcher.projects || 0}</div>
+                                    <div className="text-xl font-bold text-emerald-600">{selectedResearcher.projects || selectedResearcher.total_pi_count || 0}</div>
                                     <div className="text-xs text-slate-500">과제 수</div>
                                 </div>
                             </div>
 
-                            {/* Contact Info */}
+                            {/* Contact Info - Only Link */}
                             <div className="bg-slate-50 rounded-xl p-4 border border-slate-100 space-y-2">
-                                <h4 className="text-sm font-bold text-slate-800 mb-2">📞 연락처 정보</h4>
-                                {selectedResearcher.email && (
-                                    <p className="text-sm text-slate-600 flex items-center gap-2">
-                                        <span className="text-xs bg-white px-2 py-0.5 rounded border border-slate-200">Email</span>
-                                        {selectedResearcher.email}
-                                    </p>
-                                )}
-                                {selectedResearcher.phone && (
-                                    <p className="text-sm text-slate-600 flex items-center gap-2">
-                                        <span className="text-xs bg-white px-2 py-0.5 rounded border border-slate-200">Tel</span>
-                                        {selectedResearcher.phone}
-                                    </p>
+                                {selectedResearcher.ku_url ? (
+                                    <a href={selectedResearcher.ku_url} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-600 hover:underline flex items-center gap-2 w-full justify-center">
+                                        <span className="text-xs bg-white px-2 py-0.5 rounded border border-slate-200 text-slate-600">Link</span>
+                                        병원 의료진 소개 페이지
+                                    </a>
+                                ) : (
+                                    <p className="text-xs text-slate-400 text-center">상세 페이지 링크가 없습니다.</p>
                                 )}
                             </div>
                         </div>
@@ -301,17 +414,35 @@ export default function SearchPage() {
                     {/* Right: Projects & Details */}
                     <div className="lg:w-2/3 flex flex-col gap-6 h-full overflow-y-auto custom-scrollbar pr-2">
 
-                        {/* Major Research Areas */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 shrink-0">
-                            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center">
-                                <FaMicrochip className="mr-2 text-indigo-500" />주요 연구 분야
-                            </h3>
-                            <p className="text-slate-600 leading-relaxed">
-                                {selectedResearcher.major_research || "등록된 주요 연구 분야 정보가 없습니다."}
-                            </p>
-                        </div>
+                        {/* Platforms - Moved to Top */}
+                        {selectedResearcher.platforms && selectedResearcher.platforms.length > 0 && (
+                            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 shrink-0">
+                                <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center">
+                                    <FaHandshake className="mr-2 text-blue-500" />참여 플랫폼
+                                </h3>
+                                <div className="flex gap-2 flex-wrap">
+                                    {selectedResearcher.platforms.map((p: string, i: number) => {
+                                        const platformColors: Record<string, string> = {
+                                            "정밀의료기기": "bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100",
+                                            "정밀재생": "bg-emerald-50 text-emerald-700 border-emerald-100 hover:bg-emerald-100",
+                                            "면역-마이크로바이옴": "bg-purple-50 text-purple-700 border-purple-100 hover:bg-purple-100",
+                                            "신약": "bg-rose-50 text-rose-700 border-rose-100 hover:bg-rose-100",
+                                            "데이터": "bg-cyan-50 text-cyan-700 border-cyan-100 hover:bg-cyan-100",
+                                            "혁신형의사과학자": "bg-amber-50 text-amber-700 border-amber-100 hover:bg-amber-100"
+                                        };
+                                        const colorClass = platformColors[p] || "bg-slate-50 text-slate-700 border-slate-100 hover:bg-slate-100";
 
-                        {/* Associated Projects */}
+                                        return (
+                                            <Badge key={i} className={`px-3 py-1 text-sm border ${colorClass}`}>
+                                                {p}
+                                            </Badge>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Associated Projects - Moved to Middle */}
                         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 shrink-0">
                             <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center">
                                 <FaFlask className="mr-2 text-emerald-500" />관련 연구 과제
@@ -347,21 +478,51 @@ export default function SearchPage() {
                             </div>
                         </div>
 
-                        {/* Platforms */}
-                        {selectedResearcher.platforms && selectedResearcher.platforms.length > 0 && (
-                            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 shrink-0">
-                                <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center">
-                                    <FaHandshake className="mr-2 text-blue-500" />참여 플랫폼
-                                </h3>
-                                <div className="flex gap-2 flex-wrap">
-                                    {selectedResearcher.platforms.map((p: string, i: number) => (
-                                        <Badge key={i} className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-100 px-3 py-1 text-sm">
-                                            {p}
-                                        </Badge>
-                                    ))}
+                        {/* Major Research Areas (Papers) - Moved to Bottom */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 shrink-0">
+                            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center">
+                                <FaMicrochip className="mr-2 text-indigo-500" />주요 연구 분야
+                            </h3>
+                            <p className="text-slate-600 leading-relaxed mb-6">
+                                {selectedResearcher.major_research || "등록된 주요 연구 분야 정보가 없습니다."}
+                            </p>
+
+                            {/* Paper Topics - Compact Style */}
+                            {selectedResearcher.paper_topics && selectedResearcher.paper_topics.length > 0 && (
+                                <div className="space-y-2">
+                                    <h4 className="text-sm font-bold text-slate-700 mb-2 flex items-center">
+                                        <FaFlask className="mr-2 text-indigo-500" />주요 논문 주제
+                                    </h4>
+                                    {selectedResearcher.paper_topics.map((topic: string, i: number) => {
+                                        let journal = "";
+                                        let title = topic;
+                                        // Parse [Journal] Title format
+                                        const match = topic.match(/^\[(.*?)\]\s*(.*)$/);
+                                        if (match) {
+                                            journal = match[1];
+                                            title = match[2];
+                                        }
+
+                                        return (
+                                            <Card key={i} className="bg-white border-slate-200 shadow-sm hover:shadow-md hover:border-indigo-200 transition-all duration-200 group">
+                                                <CardContent className="p-2.5 flex flex-col gap-1">
+                                                    {journal && (
+                                                        <div className="flex items-center">
+                                                            <span className="inline-flex items-center rounded-md bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700 ring-1 ring-inset ring-indigo-700/10 group-hover:bg-indigo-100 transition-colors">
+                                                                {journal}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    <p className="text-xs text-slate-700 font-medium leading-snug group-hover:text-indigo-900 transition-colors line-clamp-2">
+                                                        {title}
+                                                    </p>
+                                                </CardContent>
+                                            </Card>
+                                        );
+                                    })}
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
