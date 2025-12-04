@@ -30,7 +30,7 @@ graph TD
     Vercel -->|Next.js App Router| Frontend[Frontend UI]
     Vercel -->|API Routes| Backend[Backend API]
     
-    Backend -->|Auth & Data| Supabase[Supabase (PostgreSQL)]
+    Backend -->|Auth & Data| Supabase["Supabase (PostgreSQL)"]
     Backend -->|Vector Search| PGVector[(pgvector)]
     Backend -->|Embeddings & Chat| OpenAI[OpenAI API]
     
