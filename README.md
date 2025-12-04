@@ -108,11 +108,22 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 The project uses the following key tables:
 
 - **`researchers`**: Stores researcher profiles, stats, and vector embeddings.
+  - New columns: `recent_papers_3yr`, `total_pi_count`, `platforms`, `ku_url`, `paper_topics`
 - **`projects`**: Stores research projects, budgets, and vector embeddings.
 
 **Vector Search Functions**:
-- `match_researchers`: Finds researchers by embedding similarity.
+- `match_researchers`: Finds researchers by embedding similarity (supports department filter).
 - `match_projects`: Finds projects by embedding similarity.
+
+## 🛠 Utility Scripts
+
+The project includes several Python scripts for data management:
+
+- **`migrate_data.py`**: Main script to populate the database from Excel (`total_df.xlsx`). Handles embeddings generation.
+- **`update_local_images.py`**: Updates researcher profile images in the database by matching filenames in `public/images/researchers/`.
+- **`scrape_images_playwright.py`**: Scrapes researcher images from the hospital website using Playwright.
+- **`update_paper_topics.py`**: Updates the `paper_topics` column by parsing the Excel data (handles homonyms).
+- **`generate_mocks.py`**: Generates mock data for development.
 
 ## 📜 License
 

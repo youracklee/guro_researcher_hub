@@ -25,6 +25,10 @@ def get_embedding(text, model="text-embedding-3-small"):
 def migrate_researchers():
     print("Migrating researchers...")
     try:
+        # Clear existing data first
+        print("Clearing existing researchers...")
+        supabase.table('researchers').delete().neq('id', 0).execute()
+
         df = pd.read_excel('total_df.xlsx')
         # Ensure required columns exist, fill NaNs
         df = df.fillna('')
@@ -32,18 +36,34 @@ def migrate_researchers():
         researchers_data = []
         for index, row in df.iterrows():
             # Construct text for embedding
-            embedding_text = f"{row.get('name', '')} {row.get('department', '')} {row.get('specialty', '')} {row.get('keywords', '')}"
+            # Use new mapping: title -> position, specialty -> keywords
+            position = row.get('title', '')
+            keywords_raw = row.get('specialty', '')
+            keywords = [k.strip() for k in str(keywords_raw).split(',')] if keywords_raw else []
+            
+            embedding_text = f"{row.get('name', '')} {row.get('department', '')} {position} {keywords_raw} {row.get('major_research', '')}"
             
             try:
                 embedding = get_embedding(embedding_text)
                 
+                # Platform columns
+                platform_cols = ["정밀의료기기", "정밀재생", "면역-마이크로바이옴", "신약", "데이터", "혁신형의사과학자"]
+                platforms = []
+                for col in platform_cols:
+                    if row.get(col) == 1:
+                        platforms.append(col)
+
                 researcher = {
                     "name": row.get('name', ''),
                     "department": row.get('department', ''),
-                    "position": row.get('position', ''), # Added position
-                    "keywords": eval(str(row.get('keywords', '[]'))) if str(row.get('keywords', '')).startswith('[') else [str(row.get('keywords', ''))] if row.get('keywords') else [],
-                    "image_url": row.get('image_url', ''), # Added image_url
-                    "major_research": row.get('major_research', ''), # Added major_research
+                    "position": position, # Mapped from 'title'
+                    "keywords": keywords, # Mapped from 'specialty'
+                    "image_url": row.get('image_url', ''),
+                    "major_research": row.get('major_research', ''),
+                    "recent_papers_3yr": int(row.get('recent_papers_3yr', 0)) if pd.notna(row.get('recent_papers_3yr')) else 0,
+                    "total_pi_count": int(row.get('total_pi_count', 0)) if pd.notna(row.get('total_pi_count')) else 0,
+                    "platforms": platforms,
+                    "ku_url": row.get('href', ''), # Mapped from 'href'
                     "embedding": embedding
                 }
                 researchers_data.append(researcher)
@@ -63,6 +83,10 @@ def migrate_researchers():
 def migrate_projects():
     print("Migrating projects...")
     try:
+        # Clear existing projects first
+        print("Clearing existing projects...")
+        supabase.table('projects').delete().neq('id', 0).execute()
+
         df = pd.read_excel('ntis_results.xlsx')
         df = df.fillna('')
         
